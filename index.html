@@ -87,8 +87,15 @@ section { display: grid; gap: 10px; }
 .karte .zahlen .kl1 { color: var(--beere); font-weight: 700; }
 .karte .zahlen .ko { color: var(--kompost); }
 .karte .satz { font-size: .9rem; color: var(--leise); }
-.karte .aktionen { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; }
+.karte .aktionen { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
 .karte .aktionen .knopf { padding: 8px 6px; min-height: 48px; font-size: .95rem; }
+.karte .aktionen .plus { grid-column: 1 / -1; min-height: 64px; font-size: 1.35rem; }
+.karte .kistenzeile { display: flex; gap: 8px; align-items: baseline; }
+.karte .kistenzahl { font-size: 2.4rem; font-weight: 800; line-height: 1; color: var(--beere); }
+.karte .kistenzeile span { font-weight: 700; color: var(--beere); }
+.liste-vorschau { display: grid; gap: 8px; }
+.liste-vorschau p { margin: 0; }
+textarea.liste { width: 100%; height: 110px; font: inherit; font-size: .95rem; border: 2px solid var(--linie); border-radius: 8px; padding: 8px; }
 .leer { color: var(--leise); padding: 12px; border: 2px dashed var(--linie); border-radius: 10px; margin: 0; }
 
 .liste { background: var(--flaeche); border: 1px solid var(--linie); border-radius: 10px; overflow-x: auto; }
@@ -191,10 +198,11 @@ textarea.roh { width: 100%; height: 90px; font-family: ui-monospace, Menlo, Cons
       </div>
       <div class="stamm">
         <h2 data-t="erntehelfer">Erntehelfer</h2>
-        <p class="klein-text" data-t="stamm_hinweis">Nummer wie auf der Karte des Helfers. Abgereiste Helfer abmelden, nicht löschen.</p>
+        <p class="klein-text" data-t="stamm_hinweis">Nr. 1–99 kommen aus der Helferliste vom Computer. Neu angelegte Helfer bekommen eine Nummer ab 100. Abgereiste Helfer abmelden, nicht löschen.</p>
+        <div class="leiste"><button type="button" class="knopf klein" id="b-liste" data-t="liste_knopf">Helferliste einfügen</button></div>
         <div id="stamm-liste" class="stamm"></div>
         <div class="zeile">
-          <input type="number" id="neu-nr" placeholder="Nr." min="1" step="1" inputmode="numeric" aria-label="Nummer des neuen Helfers" data-t-aria="aria_neu_nr">
+          <b class="num" id="neu-nr-anzeige">Nr.</b>
           <input type="text" id="neu-name" placeholder="Name oder Kürzel" maxlength="40" autocomplete="off" aria-label="Name des neuen Helfers" data-t-ph="name_ph" data-t-aria="aria_neu_name">
           <button type="button" class="knopf klein" id="b-neu" data-t="hinzufuegen">Hinzufügen</button>
         </div>
@@ -215,11 +223,12 @@ textarea.roh { width: 100%; height: 90px; font-family: ui-monospace, Menlo, Cons
 
 <script>
 "use strict";
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.2.0";
 const CACHE = "ernte-v1";                      // gleicher Name wie in sw.js
 const DATEIEN = ["./", "./saetze.json", "./manifest.webmanifest", "./manifest-ro.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
-const KISTE_MIN = 4.6, KISTE_MAX = 6.0;        // kg je Kiste, außerhalb wird nachgefragt
-const KISTEN_VIEL = 30, KOMPOST_VIEL = 20;     // je Wiegung, darüber wird nachgefragt
+const KISTE_KG = 5;                            // Nenngewicht einer Kiste Klasse I (10 × 500 g); gewogen wird nicht (ADR 0008)
+const KOMPOST_VIEL = 20;                       // kg Kompost je Eintrag, darüber wird nachgefragt
+const FELD_NR_AB = 100;                        // Nr. 1–99 kommen aus der Helferliste vom Computer, ab 100 vergibt das Handy
 const ERINNERN_NACH_STD = 2;                   // „Senden“ wird auffällig, wenn Einträge so lange ungesendet sind
 const ARTEN = ["start", "pause", "weiter", "ende", "wiegung"];   // Arten in der Ernte-Datei (nie übersetzen)
 
@@ -239,8 +248,8 @@ const TEXTE = {
     th_satz: "Satz", th_helfer: "Helfer", th_std: "Std.", th_kisten: "Kisten", th_kl1: "kg Kl. I", th_ko: "kg Kompost", th_kgstd: "Ø kg/Std.",
     th_zeit: "Zeit", th_nr: "Nr.", th_was: "Was",
     einstellungen: "Einstellungen und Erntehelfer", sprache: "Sprache", erntehelfer: "Erntehelfer",
-    stamm_hinweis: "Nummer wie auf der Karte des Helfers. Abgereiste Helfer abmelden, nicht löschen.",
-    aria_neu_nr: "Nummer des neuen Helfers", name_ph: "Name oder Kürzel", aria_neu_name: "Name des neuen Helfers", hinzufuegen: "Hinzufügen",
+    stamm_hinweis: "Nr. 1–99 kommen aus der Helferliste vom Computer. Neu angelegte Helfer bekommen eine Nummer ab 100. Abgereiste Helfer abmelden, nicht löschen.",
+    name_ph: "Name oder Kürzel", aria_neu_name: "Name des neuen Helfers", hinzufuegen: "Hinzufügen",
     saison_knopf: "Ganze Saison senden (Sicherung)", update: "Nach neuer Version suchen", suche: "Suche …",
     kein_internet: "Kein Internet. Später nochmal versuchen.",
     installieren: "Als App aufs Handy legen: Android (Chrome): Menü mit den drei Punkten, dann „Zum Startbildschirm hinzufügen“. iPhone (Safari): Teilen-Knopf, dann „Zum Home-Bildschirm“. Danach immer über dieses Symbol öffnen.",
@@ -250,10 +259,10 @@ const TEXTE = {
     status_arbeitet: "pflückt", status_pause: "Pause", status_feierabend: "Feierabend", status_fehlt: "nicht angemeldet", ende_fehlt_chip: "Feierabend fehlt",
     // Karten und Listen
     nr: (n) => "Nr. " + n, satz_nr: (id) => "Satz " + id,
-    std: (v) => v + " Std.", kisten_n: (n) => n + " Kisten", kg_kompost: (v) => v + " kg Kompost", kg_std: (v) => v + " kg/Std.",
-    wiegen: "Wiegen", mehr: "Mehr", storniert: "storniert", storno: "Storno",
+    std: (v) => v + " Std.", kg_kompost: (v) => v + " kg Kompost", kisten_std: (v) => v + " Kisten/Std.",
+    kisten_gross: (n) => (n === 1 ? "Kiste" : "Kisten"), plus_kiste: "+1 Kiste", kompost_knopf: "Kompost", mehr: "Mehr", storniert: "storniert", storno: "Storno",
     leer_anmelden: "Noch niemand angemeldet. Oben auf „Helfer anmelden“ tippen, dann Satz und Helfer wählen.",
-    leer_anlegen: "Zuerst unten bei „Einstellungen und Erntehelfer“ die Helfer mit ihrer Nummer anlegen.",
+    leer_anlegen: "Zuerst unten bei „Einstellungen und Erntehelfer“ die Helferliste einfügen.",
     keine_eintraege: "Noch keine Einträge an diesem Tag.", nur_30: "Nur die letzten 30 zeigen", alle_n: (n) => "Alle " + n + " Einträge zeigen",
     ungesendet: (n) => n + " ungesendet", alles_gesendet: "alles gesendet",
     info: (g, v, n, st) => "Gerät " + g + " · App " + v + " · " + n + " Sätze, Stand " + st,
@@ -278,21 +287,20 @@ const TEXTE = {
     satz_feld: "Satz (Feld · Sorte)", keine_saetze: "Keine Sätze vorhanden. Die Seite einmal mit Internet öffnen.", aendern: "ändern",
     satz_waehlen: "Bitte den Satz wählen.",
     // Helfer anmelden
-    aria_helfer: "Helfer", keine_helfer: "Noch keine Helfer angelegt. Unten bei „Einstellungen und Erntehelfer“ anlegen.",
+    aria_helfer: "Helfer", keine_helfer: "Noch keine Helfer. Unten bei „Einstellungen und Erntehelfer“ die Helferliste einfügen.",
     helfer_wahl: "Helfer (• = schon angemeldet, wechselt dann den Satz)", starten: "Starten", helfer_waehlen: "Bitte mindestens einen Helfer wählen.",
     gestartet: (n, satz) => n + " Helfer auf " + satz + " gestartet",
-    // Wiegen
-    wiegen_titel: (nr) => "Wiegen: Nr. " + nr, kisten_label: "Kisten Klasse I (je 10 × 500 g)", kiste_weniger: "eine Kiste weniger", kiste_mehr: "eine Kiste mehr",
-    kg_ph: "z. B. 15,4", gewicht_label: "Gewicht Klasse I, kg", kompost_label: "Kompost, kg",
-    kisten_ganz: "Kisten: bitte eine ganze Zahl.", gewicht_zahl: "Gewicht bitte als Zahl eintragen, z. B. 15,4.",
-    gewicht_fehlt: (k) => "Bitte das Gewicht der " + k + " Kiste(n) eintragen.", ohne_kisten: "Gewicht ohne Kisten: bitte die Kistenzahl eintragen.",
-    nichts_eingetragen: "Bitte Kisten oder Kompost eintragen.",
-    je_kiste: (v) => v + " kg je Kiste", auf_einmal: (k) => k + " Kisten auf einmal",
+    // Kisten und Kompost
+    kiste_toast: (nr, n) => "Nr. " + nr + ": +1 Kiste (heute " + n + ")",
+    kiste_titel: (nr) => "+1 Kiste: Nr. " + nr, kiste_speichern: "Kiste speichern",
+    kiste_dlg_toast: (nr, z) => "Nr. " + nr + ": 1 Kiste um " + z + " gespeichert",
+    kompost_titel: (nr) => "Kompost: Nr. " + nr, kompost_label: "Kompost, kg", kompost_ph: "z. B. 2,5",
+    kompost_zahl: "Kompost bitte als Zahl eintragen, z. B. 2,5.", kompost_fehlt: "Bitte die kg Kompost eintragen.",
+    kompost_toast: (nr, c) => "Nr. " + nr + ": Kompost " + c + " kg",
     ungewoehnlich: (l) => "Ungewöhnlich: " + l + ". Stimmt das? Dann nochmal „Speichern“.",
-    gewogen: (nr, k, g, c) => "Nr. " + nr + ": " + k + " Kisten, " + g + " kg" + (c ? ", Kompost " + c + " kg" : ""),
     // Mehr, Alle, Storno
     was_passiert: "Was ist passiert?", satz_wechseln: "Satz wechseln", wieder_starten: "Wieder starten", weiter_nach_pause: "Weiter nach Pause",
-    hinweis_wechsel: "Vor einem Satzwechsel bitte erst wiegen, sonst zählen die Kisten zum neuen Satz.", was_waehlen: "Bitte auswählen, was passiert ist.",
+    hinweis_wechsel: "Vor einem Satzwechsel die Kisten vom alten Satz eintragen, sonst zählen sie zum neuen Satz.", was_waehlen: "Bitte auswählen, was passiert ist.",
     niemand_pause: "Niemand ist in der Pause.", niemand: "Niemand ist angemeldet.", alle_titel: (a) => "Alle: " + a,
     betroffen: (n, nrs) => n + " Helfer: Nr. " + nrs, fuer_alle: "Für alle speichern", sammel_gespeichert: (n, a) => n + " × " + a + " gespeichert",
     storno_titel: "Eintrag stornieren?", storno_wiegung: (k, g, c) => k + " Kisten, " + g + " kg, Kompost " + c + " kg",
@@ -312,7 +320,22 @@ const TEXTE = {
     nur_tag: (d) => "Stattdessen nur " + d + " komplett senden", schon_gesendet: "Alles ist schon gesendet.", nochmal_tag: (d) => d + " nochmal komplett senden",
     // Erntehelfer verwalten
     aria_name: (nr) => "Name Nr. " + nr, wieder_anmelden: "Wieder anmelden", abmelden: "Abmelden",
-    nr_bereich: "Nummer: bitte eine ganze Zahl von 1 bis 9999.", nr_gibts: (nr) => "Nr. " + nr + " gibt es schon."
+    aus_liste: "aus der Helferliste", helfer_angelegt: (nr) => "Nr. " + nr + " angelegt.",
+    // Helferliste vom Computer
+    liste_knopf: "Helferliste einfügen",
+    liste_einfuegen_hinweis: "Die Nachricht „Ernte-Helferliste …“ in WhatsApp lange drücken, „Kopieren“, dann hier lange drücken und „Einfügen“.",
+    liste_aria: "Text der Helferliste", liste_pruefen: "Prüfen", liste_uebernehmen: "Übernehmen",
+    liste_falsch: "Das ist keine Helferliste. Erwartet wird die Nachricht, die mit „Ernte-Helferliste“ beginnt.",
+    liste_unklar: (z) => "Diese Zeilen versteht die Seite nicht: " + z + ". Bitte die ganze Nachricht nochmal kopieren.",
+    liste_leer: "In der Liste steht kein Helfer.",
+    liste_kopf: (j, st) => "Helferliste " + j + ", Stand " + st + ". Das ändert sich:",
+    liste_jahr_warn: (j, s) => "Achtung: Die Liste ist für " + j + ", die Sätze auf diesem Handy für " + s + ".",
+    liste_neu: (n) => "Neu (" + n + ")", liste_umbenannt: (n) => "Umbenannt (" + n + ")",
+    liste_wieder: (n) => "Wieder angemeldet (" + n + ")", liste_abgemeldet: (n) => "Abgemeldet (" + n + ")",
+    liste_gleich: (n) => n + " unverändert.", liste_feld: (n) => n + " Helfer vom Feld (ab Nr. 100) bleiben, wie sie sind.",
+    liste_keine_aenderung: "Keine Änderungen.", liste_toast: "Helferliste übernommen.",
+    liste_fehlt_banner: "Noch keine Helferliste vom Computer. Bitte unter „Einstellungen“ einfügen.",
+    liste_stand_info: (j, st) => " · Helferliste " + j + ", Stand " + st
   },
   ro: {
     locale: "ro-RO", manifest: "./manifest-ro.webmanifest", titel: "Înregistrare recoltă căpșuni", kurzname: "Recoltă",
@@ -326,8 +349,8 @@ const TEXTE = {
     th_satz: "Parcela", th_helfer: "Culeg.", th_std: "Ore", th_kisten: "Lăzi", th_kl1: "kg cl. I", th_ko: "kg compost", th_kgstd: "Ø kg/oră",
     th_zeit: "Ora", th_nr: "Nr.", th_was: "Ce",
     einstellungen: "Setări și culegători", sprache: "Limba", erntehelfer: "Culegători",
-    stamm_hinweis: "Numărul ca pe cardul culegătorului. Culegătorii plecați se dezactivează, nu se șterg.",
-    aria_neu_nr: "Numărul culegătorului nou", name_ph: "Nume sau inițiale", aria_neu_name: "Numele culegătorului nou", hinzufuegen: "Adaugă",
+    stamm_hinweis: "Nr. 1–99 vin din lista de la calculator. Culegătorii adăugați aici primesc un număr de la 100. Culegătorii plecați se dezactivează, nu se șterg.",
+    name_ph: "Nume sau inițiale", aria_neu_name: "Numele culegătorului nou", hinzufuegen: "Adaugă",
     saison_knopf: "Trimite tot sezonul (copie de siguranță)", update: "Caută versiune nouă", suche: "Caut …",
     kein_internet: "Fără internet. Încearcă mai târziu.",
     installieren: "Pune pagina ca aplicație pe telefon: Android (Chrome): meniul cu trei puncte, apoi „Adaugă pe ecranul de pornire”. iPhone (Safari): butonul Partajează, apoi „Adaugă pe ecranul principal”. Apoi deschide-o mereu de la această pictogramă.",
@@ -335,10 +358,10 @@ const TEXTE = {
     art_start: "Start", art_pause: "Pauză", art_weiter: "Continuă", art_ende: "Terminat", art_wiegung: "Cântărire",
     status_arbeitet: "culege", status_pause: "pauză", status_feierabend: "terminat", status_fehlt: "neînscris", ende_fehlt_chip: "lipsește terminarea",
     nr: (n) => "Nr. " + n, satz_nr: (id) => "Parcela " + id,
-    std: (v) => v + " ore", kisten_n: (n) => n + " lăzi", kg_kompost: (v) => v + " kg compost", kg_std: (v) => v + " kg/oră",
-    wiegen: "Cântărește", mehr: "Mai mult", storniert: "anulat", storno: "Anulează",
+    std: (v) => v + " ore", kg_kompost: (v) => v + " kg compost", kisten_std: (v) => v + " lăzi/oră",
+    kisten_gross: (n) => (n === 1 ? "ladă" : "lăzi"), plus_kiste: "+1 ladă", kompost_knopf: "Compost", mehr: "Mai mult", storniert: "anulat", storno: "Anulează",
     leer_anmelden: "Încă nu e nimeni înscris. Apasă sus pe „Înscrie culegători”, apoi alege parcela și culegătorii.",
-    leer_anlegen: "Mai întâi adaugă jos, la „Setări și culegători”, culegătorii cu numărul lor.",
+    leer_anlegen: "Mai întâi lipește jos, la „Setări și culegători”, lista de culegători.",
     keine_eintraege: "Încă nu sunt înregistrări în această zi.", nur_30: "Arată doar ultimele 30", alle_n: (n) => "Arată toate cele " + n + " înregistrări",
     ungesendet: (n) => n + " netrimise", alles_gesendet: "totul trimis",
     info: (g, v, n, st) => "Telefon " + g + " · App " + v + " · " + n + " parcele, actualizat " + st,
@@ -359,20 +382,18 @@ const TEXTE = {
     zeit_fehlt: "Te rog introdu ora.", zeit_zukunft: "Ora este în viitor.",
     satz_feld: "Parcela (câmp · soi)", keine_saetze: "Nu există parcele. Deschide pagina o dată cu internet.", aendern: "schimbă",
     satz_waehlen: "Te rog alege parcela.",
-    aria_helfer: "Culegători", keine_helfer: "Încă nu sunt culegători. Adaugă-i jos, la „Setări și culegători”.",
+    aria_helfer: "Culegători", keine_helfer: "Încă nu sunt culegători. Lipește jos, la „Setări și culegători”, lista de culegători.",
     helfer_wahl: "Culegători (• = deja înscris, atunci schimbă parcela)", starten: "Pornește", helfer_waehlen: "Te rog alege cel puțin un culegător.",
     gestartet: (n, satz) => n + " culegători porniți pe " + satz,
-    wiegen_titel: (nr) => "Cântărire: nr. " + nr, kisten_label: "Lăzi clasa I (câte 10 × 500 g)", kiste_weniger: "o ladă mai puțin", kiste_mehr: "o ladă mai mult",
-    kg_ph: "de ex. 15,4", gewicht_label: "Greutate clasa I, kg", kompost_label: "Compost, kg",
-    kisten_ganz: "Lăzi: te rog un număr întreg.", gewicht_zahl: "Introdu greutatea ca număr, de ex. 15,4.",
-    gewicht_fehlt: (k) => (k === 1 ? "Te rog introdu greutatea lăzii." : "Te rog introdu greutatea celor " + k + " lăzi."),
-    ohne_kisten: "Greutate fără lăzi: te rog introdu numărul de lăzi.",
-    nichts_eingetragen: "Te rog introdu lăzi sau compost.",
-    je_kiste: (v) => v + " kg pe ladă", auf_einmal: (k) => k + " lăzi deodată",
+    kiste_toast: (nr, n) => "Nr. " + nr + ": +1 ladă (azi " + n + ")",
+    kiste_titel: (nr) => "+1 ladă: nr. " + nr, kiste_speichern: "Salvează lada",
+    kiste_dlg_toast: (nr, z) => "Nr. " + nr + ": 1 ladă la ora " + z + " – salvat",
+    kompost_titel: (nr) => "Compost: nr. " + nr, kompost_label: "Compost, kg", kompost_ph: "de ex. 2,5",
+    kompost_zahl: "Introdu compostul ca număr, de ex. 2,5.", kompost_fehlt: "Te rog introdu kg de compost.",
+    kompost_toast: (nr, c) => "Nr. " + nr + ": compost " + c + " kg",
     ungewoehnlich: (l) => "Neobișnuit: " + l + ". E corect? Atunci apasă din nou „Salvează”.",
-    gewogen: (nr, k, g, c) => "Nr. " + nr + ": " + k + " lăzi, " + g + " kg" + (c ? ", compost " + c + " kg" : ""),
     was_passiert: "Ce s-a întâmplat?", satz_wechseln: "Schimbă parcela", wieder_starten: "Pornește din nou", weiter_nach_pause: "Continuă după pauză",
-    hinweis_wechsel: "Înainte de schimbarea parcelei cântărește mai întâi, altfel lăzile se socotesc la parcela nouă.", was_waehlen: "Te rog alege ce s-a întâmplat.",
+    hinweis_wechsel: "Înainte de schimbarea parcelei introdu lăzile de pe parcela veche, altfel se socotesc la parcela nouă.", was_waehlen: "Te rog alege ce s-a întâmplat.",
     niemand_pause: "Nimeni nu e în pauză.", niemand: "Nimeni nu e înscris.", alle_titel: (a) => "Toți: " + a,
     betroffen: (n, nrs) => n + " culegători: nr. " + nrs, fuer_alle: "Salvează pentru toți", sammel_gespeichert: (n, a) => n + " × " + a + " – salvat",
     storno_titel: "Anulezi înregistrarea?", storno_wiegung: (k, g, c) => k + " lăzi, " + g + " kg, compost " + c + " kg",
@@ -390,7 +411,21 @@ const TEXTE = {
     teilen_fehler: "Partajarea n-a reușit. Folosește varianta de mai jos.",
     nur_tag: (d) => "Trimite în schimb doar ziua " + d + " complet", schon_gesendet: "Totul este deja trimis.", nochmal_tag: (d) => "Trimite din nou ziua " + d + " complet",
     aria_name: (nr) => "Nume nr. " + nr, wieder_anmelden: "Reactivează", abmelden: "Dezactivează",
-    nr_bereich: "Număr: te rog un număr întreg de la 1 la 9999.", nr_gibts: (nr) => "Nr. " + nr + " există deja."
+    aus_liste: "din listă", helfer_angelegt: (nr) => "Nr. " + nr + " adăugat.",
+    liste_knopf: "Lipește lista de culegători",
+    liste_einfuegen_hinweis: "Ține apăsat pe mesajul „Ernte-Helferliste …” în WhatsApp, „Copiază”, apoi ține apăsat aici și „Lipește”.",
+    liste_aria: "Textul listei de culegători", liste_pruefen: "Verifică", liste_uebernehmen: "Preia",
+    liste_falsch: "Aceasta nu e o listă de culegători. Se așteaptă mesajul care începe cu „Ernte-Helferliste”.",
+    liste_unklar: (z) => "Pagina nu înțelege aceste rânduri: " + z + ". Copiază din nou tot mesajul.",
+    liste_leer: "În listă nu e niciun culegător.",
+    liste_kopf: (j, st) => "Lista de culegători " + j + ", actualizată " + st + ". Se schimbă:",
+    liste_jahr_warn: (j, s) => "Atenție: lista este pentru " + j + ", parcelele de pe acest telefon pentru " + s + ".",
+    liste_neu: (n) => "Noi (" + n + ")", liste_umbenannt: (n) => "Redenumiți (" + n + ")",
+    liste_wieder: (n) => "Reactivați (" + n + ")", liste_abgemeldet: (n) => "Dezactivați (" + n + ")",
+    liste_gleich: (n) => n + " neschimbați.", liste_feld: (n) => n + " culegători adăugați pe câmp (de la nr. 100) rămân cum sunt.",
+    liste_keine_aenderung: "Nicio schimbare.", liste_toast: "Lista de culegători a fost preluată.",
+    liste_fehlt_banner: "Încă nu există lista de culegători de la calculator. Te rog lipește-o la „Setări”.",
+    liste_stand_info: (j, st) => " · lista de culegători " + j + ", actualizată " + st
   }
 };
 let SPRACHE = "de";
@@ -402,7 +437,7 @@ const S = {
   sp: null, geraet: "", vorschau: false, saetzeFehlen: false, saetzeStand: "",
   datum: heute(), folgtHeute: true, eintraege: [], helfer: [], saetze: [],
   offen: {}, offenSeit: null, letzterVersand: null, fehltEnde: [],
-  alleZeigen: false, bereit: false, fatal: "", dauerhaft: null, sw: false, spracheFrage: false
+  alleZeigen: false, bereit: false, fatal: "", dauerhaft: null, sw: false, spracheFrage: false, helferliste: null, saison: null
 };
 const $ = (id) => document.getElementById(id);
 
@@ -606,14 +641,14 @@ function zeichnen() {
       el("div", { class: "kopf" }, el("span", { class: "nr num", text: p.nr }), el("span", { class: "name", text: helferName(p.nr) || "–" }),
         el("span", { class: "chip " + (endeFehlt ? "fehlt" : p.status), text: endeFehlt ? T("ende_fehlt_chip") : T("status_" + p.status) })),
       el("div", { class: "satz", text: satzName(p.satz) }),
+      el("div", { class: "kistenzeile" }, el("b", { class: "kistenzahl num", text: p.kisten }), el("span", { text: T("kisten_gross", p.kisten) })),
       el("div", { class: "zahlen num" },
         el("span", { text: T("std", de(std)) }),
-        el("span", { text: T("kisten_n", p.kisten) }),
-        el("span", { class: "kl1", text: de(p.kl1) + " kg" }),
-        el("span", { class: "ko", text: T("kg_kompost", de(p.ko)) }),
-        el("span", { text: T("kg_std", std > 0.05 ? de(p.kl1 / std) : "–") })),
+        el("span", { text: T("kisten_std", std > 0.05 ? de(p.kisten / std) : "–") }),
+        el("span", { class: "ko", text: T("kg_kompost", de(p.ko)) })),
       el("div", { class: "aktionen" },
-        el("button", { type: "button", class: "knopf haupt", onclick: () => dlgWiegen(p), text: T("wiegen") }),
+        el("button", { type: "button", class: "knopf haupt plus", onclick: () => plusKiste(p), text: T("plus_kiste") }),
+        el("button", { type: "button", class: "knopf", onclick: () => dlgKompost(p), text: T("kompost_knopf") }),
         el("button", { type: "button", class: "knopf", disabled: p.status === "feierabend" || p.status === "fehlt", onclick: () => (istHeute ? einzel(p.nr, pause ? "weiter" : "pause", p.satz) : dlgMehr(p, pause ? "weiter" : "pause")), text: pause ? T("art_weiter") : T("art_pause") }),
         el("button", { type: "button", class: "knopf", onclick: () => dlgMehr(p, endeFehlt ? "ende" : null), text: T("mehr") }))));
   }
@@ -651,11 +686,12 @@ function zeichnen() {
   else { st.textContent = T("alles_gesendet"); st.className = "ok"; }
   bs.textContent = n ? T("senden_n", n) : T("senden");
   bs.className = "knopf gross" + (n && alt ? " dringend" : "");
-  for (const id of ["b-anmelden", "b-senden", "b-allepause", "b-alleweiter", "b-alleende", "b-neu", "b-alles-senden"]) $(id).disabled = !S.bereit;
+  for (const id of ["b-anmelden", "b-senden", "b-allepause", "b-alleweiter", "b-alleende", "b-neu", "b-alles-senden", "b-liste"]) $(id).disabled = !S.bereit;
 
   stammZeichnen();
   $("info").textContent = T("info", S.geraet || "–", APP_VERSION, S.saetze.length, S.saetzeStand || "–")
     + (S.letzterVersand ? T("zuletzt", new Date(S.letzterVersand).toLocaleString(T("locale"), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })) : "")
+    + (S.helferliste ? T("liste_stand_info", S.helferliste.jahr, S.helferliste.stand || "–") : "")
     + (S.dauerhaft === true ? T("geschuetzt") : "");
 }
 
@@ -666,6 +702,7 @@ function hinweiseZeichnen(istHeute) {
   if (S.fatal) banner("rot", S.fatal);
   if (S.vorschau) banner("ruhig", T("vorschau"));
   if (S.saetzeFehlen) banner("rot", T("saetze_fehlen"));
+  if (S.bereit && !S.vorschau && !S.helferliste) banner("", T("liste_fehlt_banner"), T("liste_knopf"), listeEinfuegen);
   if (!istHeute) banner("", T("nachtrag", datumKurz(S.datum)), T("zurueck_heute"), () => tagWechseln(heute()));
   for (const f of S.fehltEnde) if (f.datum !== S.datum) banner("", T("ende_fehlt_tag", datumKurz(f.datum), f.nrs.join(", ")), T("tag_oeffnen"), () => tagWechseln(f.datum));
 }
@@ -841,52 +878,58 @@ function dlgAnmelden() {
   });
 }
 
-function dlgWiegen(p) {
-  const nr = p.nr;
-  const f = formular(T("wiegen_titel", nr) + (helferName(nr) ? " · " + helferName(nr) : ""));
+// „+1 Kiste“: heute und mit laufendem Satz sofort speichern; sonst (Nachtrag, nicht angemeldet, Feierabend) Dialog.
+async function plusKiste(p) {
+  const laeuft = p.status === "arbeitet" || p.status === "pause";
+  if (S.datum !== heute() || !laeuft || !S.saetze.some((x) => x.id === p.satz)) { dlgKiste(p); return; }
+  if (einzelLaeuft) return;                  // Doppeltippen während des Speicherns zählt nicht doppelt
+  einzelLaeuft = true;
+  try {
+    const ids = await speichern([{ zeit: zeitMitSekunden(jetztZeit(), p.nr), helfer: p.nr, art: "wiegung", satz: p.satz, kisten: 1, klasse1_kg: KISTE_KG, kompost_kg: 0 }]);
+    const q = tagAuswerten().pro.get(p.nr);
+    toast(T("kiste_toast", p.nr, q ? q.kisten : 1), ids);
+  } catch (e) { toast(fehlerText(e)); }
+  einzelLaeuft = false;
+}
+function titelHelfer(text, nr) { return text + (helferName(nr) ? " · " + helferName(nr) : ""); }
+function dlgKiste(p) {
+  const f = formular(titelHelfer(T("kiste_titel", p.nr), p.nr));
   const satz = satzWahl(f, p.satz, true);
-  const kisten = el("input", { type: "number", id: "f-kisten", min: "0", step: "1", value: "1", inputmode: "numeric" });
-  const schritt = (d) => { kisten.value = Math.max(0, (parseInt(kisten.value, 10) || 0) + d); };
-  f.append(el("div", { class: "feld" }, el("span", { text: T("kisten_label") }),
-    el("div", { class: "stepper" },
-      el("button", { type: "button", "aria-label": T("kiste_weniger"), onclick: () => schritt(-1), text: "−" }),
-      kisten,
-      el("button", { type: "button", "aria-label": T("kiste_mehr"), onclick: () => schritt(1), text: "+" }))));
-  const kg = el("input", { type: "text", id: "f-kg", inputmode: "decimal", placeholder: T("kg_ph"), autocomplete: "off" });
-  const ko = el("input", { type: "text", id: "f-ko", inputmode: "decimal", placeholder: "0", autocomplete: "off" });
-  f.append(el("div", { class: "zweispaltig" },
-    el("label", { class: "feld", for: "f-kg" }, el("span", { text: T("gewicht_label") }), kg),
-    el("label", { class: "feld", for: "f-ko" }, el("span", { text: T("kompost_label") }), ko)));
   const z = zeitFeld(f);
-  let bestaetigt = "";
-  fuss(f, T("speichern"), async (m) => {
+  fuss(f, T("kiste_speichern"), async () => {
     if (!satz()) return T("satz_waehlen");
-    const kText = String(kisten.value).trim();
-    const k = kText === "" ? 0 : Number(kText), g = rund2(zahl(kg.value)), c = rund2(zahl(ko.value));
-    if (!Number.isInteger(k) || k < 0) return T("kisten_ganz");
-    if (isNaN(g) || isNaN(c)) return T("gewicht_zahl");
-    if (k > 0 && g <= 0) return T("gewicht_fehlt", k);
-    if (k === 0 && g > 0) return T("ohne_kisten");
-    if (k === 0 && c <= 0) return T("nichts_eingetragen");
     const zf = zeitPruefen(z.value); if (zf) return zf;
-    const auffaellig = [];
-    if (k && (g / k < KISTE_MIN || g / k > KISTE_MAX)) auffaellig.push(T("je_kiste", de(g / k, 2)));
-    if (k > KISTEN_VIEL) auffaellig.push(T("auf_einmal", k));
-    if (c > KOMPOST_VIEL) auffaellig.push(T("kg_kompost", de(c)));
-    const schluessel = [k, g, c].join("|");
-    if (auffaellig.length && bestaetigt !== schluessel) {
-      bestaetigt = schluessel; m.className = "meldung warn";
-      return T("ungewoehnlich", auffaellig.join(", "));
-    }
-    const ids = await speichern([{ zeit: zeitMitSekunden(z.value, nr), helfer: nr, art: "wiegung", satz: satz(), kisten: k, klasse1_kg: g, kompost_kg: c }]);
-    toast(T("gewogen", nr, k, de(g), c ? de(c) : ""), ids);
+    const ids = await speichern([{ zeit: zeitMitSekunden(z.value, p.nr), helfer: p.nr, art: "wiegung", satz: satz(), kisten: 1, klasse1_kg: KISTE_KG, kompost_kg: 0 }]);
+    toast(T("kiste_dlg_toast", p.nr, z.value), ids);
     return true;
   });
-  setTimeout(() => kg.focus(), 50);
+}
+function dlgKompost(p) {
+  const f = formular(titelHelfer(T("kompost_titel", p.nr), p.nr));
+  const satz = satzWahl(f, p.satz, true);
+  const ko = el("input", { type: "text", id: "f-ko", inputmode: "decimal", placeholder: T("kompost_ph"), autocomplete: "off" });
+  f.append(el("label", { class: "feld", for: "f-ko" }, el("span", { text: T("kompost_label") }), ko));
+  const z = zeitFeld(f);
+  let bestaetigt = null;
+  fuss(f, T("speichern"), async (m) => {
+    if (!satz()) return T("satz_waehlen");
+    const c = rund2(zahl(ko.value));
+    if (isNaN(c)) return T("kompost_zahl");
+    if (c <= 0) return T("kompost_fehlt");
+    const zf = zeitPruefen(z.value); if (zf) return zf;
+    if (c > KOMPOST_VIEL && bestaetigt !== c) {
+      bestaetigt = c; m.className = "meldung warn";
+      return T("ungewoehnlich", T("kg_kompost", de(c)));
+    }
+    const ids = await speichern([{ zeit: zeitMitSekunden(z.value, p.nr), helfer: p.nr, art: "wiegung", satz: satz(), kisten: 0, klasse1_kg: 0, kompost_kg: c }]);
+    toast(T("kompost_toast", p.nr, de(c)), ids);
+    return true;
+  });
+  setTimeout(() => ko.focus(), 50);
 }
 
 function dlgMehr(p, vorwahl) {
-  const f = formular(T("nr", p.nr) + (helferName(p.nr) ? " · " + helferName(p.nr) : ""));
+  const f = formular(titelHelfer(T("nr", p.nr), p.nr));
   const laeuft = p.status === "arbeitet" || p.status === "pause";
   const art = wahl(f, T("was_passiert"), [["start", laeuft ? T("satz_wechseln") : T("wieder_starten")], ["pause", T("art_pause")], ["weiter", T("weiter_nach_pause")], ["ende", T("art_ende")]], vorwahl);
   f.append(el("p", { class: "klein-text", text: T("hinweis_wechsel") }));
@@ -978,13 +1021,13 @@ function dlgSenden(alles) {
     const roh = el("textarea", { class: "roh", readonly: true, "aria-label": T("aria_inhalt") });
     roh.value = paket.text;
     const direkt = kannTeilen(paket.datei);
-    ersatz.append(
+    ersatz.append(el("div", { style: "display:grid;gap:8px" },      // el() lässt leere Teile weg (append allein schriebe „null“)
       direkt ? el("p", { class: "klein-text", text: T("ersatzweg") }) : null,
       el("div", { class: "leiste" },
         direkt ? el("button", { type: "button", class: "knopf klein", onclick: () => herunterladen(paket), text: T("datei_speichern") }) : null,
         el("button", { type: "button", class: "knopf klein", onclick: async () => { try { await navigator.clipboard.writeText(paket.text); m.className = "meldung gut"; m.textContent = T("kopiert"); } catch (e) { roh.focus(); roh.select(); m.className = "meldung warn"; m.textContent = T("von_hand"); } }, text: T("text_kopieren") }),
         el("button", { type: "button", class: "knopf klein haupt", onclick: fertig, text: T("geschickt") })),
-      roh);
+      roh));
   };
   const vorbereiten = async (tage, ganz) => {
     haupt.disabled = true; paket = null; m.textContent = ""; warnung.textContent = ""; ersatz.hidden = true; ersatz.replaceChildren();
@@ -1031,34 +1074,127 @@ function herunterladen(paket) {
   } catch (e) { /* dann bleibt „Text kopieren“ */ }
 }
 
-/* ---------- Erntehelfer verwalten ---------- */
+/* ---------- Erntehelfer verwalten ----------
+   Nr. 1–99 kommen aus der Helferliste vom Computer (domaenen/ernte/helfer.py, per WhatsApp) und lassen sich hier nicht
+   umbenennen. Im Feld angelegte Helfer bekommen die nächste freie Nummer ab 100 und bleiben beim Einfügen einer Liste. */
+function naechsteFeldNr() { return S.helfer.reduce((a, x) => Math.max(a, x.nr), FELD_NR_AB - 1) + 1; }
 function stammZeichnen() {
   const l = $("stamm-liste");
   if (l.contains(document.activeElement)) return;          // nicht neu aufbauen, während jemand tippt
   l.replaceChildren();
   for (const x of [...S.helfer].sort((a, b) => a.nr - b.nr)) {
-    const name = el("input", { type: "text", value: x.name || "", maxlength: "40", autocomplete: "off", "aria-label": T("aria_name", x.nr), id: "st-" + x.nr });
+    let name;
+    if (x.nr < FELD_NR_AB) {
+      name = el("span", {}, el("span", { text: x.name || "–" }), " ", el("span", { class: "klein-text", text: "(" + T("aus_liste") + ")" }));
+    } else {
+      name = el("input", { type: "text", value: x.name || "", maxlength: "40", autocomplete: "off", "aria-label": T("aria_name", x.nr), id: "st-" + x.nr });
+      name.addEventListener("change", () => helferSpeichern(S.helfer.map((y) => (y.nr === x.nr ? Object.assign({}, y, { name: name.value.trim() }) : y))));
+    }
     if (x.aktiv === false) name.style.opacity = ".5";
-    name.addEventListener("change", () => helferSpeichern(S.helfer.map((y) => (y.nr === x.nr ? Object.assign({}, y, { name: name.value.trim() }) : y))));
     l.append(el("div", { class: "zeile" }, el("b", { class: "num", text: T("nr", x.nr) }), name,
       el("button", { type: "button", class: "knopf klein", onclick: () => helferSpeichern(S.helfer.map((y) => (y.nr === x.nr ? Object.assign({}, y, { aktiv: y.aktiv === false }) : y))), text: x.aktiv === false ? T("wieder_anmelden") : T("abmelden") })));
   }
-  const naechste = S.helfer.reduce((a, x) => Math.max(a, x.nr), 0) + 1;
-  if (document.activeElement !== $("neu-nr")) $("neu-nr").placeholder = T("nr", naechste);
+  $("neu-nr-anzeige").textContent = T("nr", naechsteFeldNr());
 }
 async function helferSpeichern(liste) {
   try { await S.sp.schreiben([], { helfer: liste }); S.helfer = liste; $("stamm-meldung").textContent = ""; }
-  catch (e) { $("stamm-meldung").textContent = fehlerText(e); }
+  catch (e) { $("stamm-meldung").className = "meldung"; $("stamm-meldung").textContent = fehlerText(e); zeichnen(); return false; }
   zeichnen();
+  return true;
 }
-function helferNeu() {
-  const m = $("stamm-meldung");
-  const roh = $("neu-nr").value.trim(), name = $("neu-name").value.trim();
-  const nr = roh === "" ? S.helfer.reduce((a, x) => Math.max(a, x.nr), 0) + 1 : Number(roh);
-  if (!Number.isInteger(nr) || nr < 1 || nr > 9999) { m.textContent = T("nr_bereich"); return; }
-  if (S.helfer.some((x) => x.nr === nr)) { m.textContent = T("nr_gibts", nr); return; }
-  $("neu-nr").value = ""; $("neu-name").value = "";
-  helferSpeichern([...S.helfer, { nr, name, aktiv: true }]);
+async function helferNeu() {
+  const m = $("stamm-meldung"), name = $("neu-name").value.trim(), nr = naechsteFeldNr();
+  if (await helferSpeichern([...S.helfer, { nr, name, aktiv: true }])) {
+    $("neu-name").value = ""; m.className = "meldung gut"; m.textContent = T("helfer_angelegt", nr);
+  }
+}
+
+// Helferliste aus der WhatsApp-Nachricht: Kopfzeile „Ernte-Helferliste <Jahr> (Stand <Datum>)“, dann je Zeile „<Nr> <Kürzel>“.
+function listeLesen(text) {
+  const zeilen = String(text || "").replace(/\r/g, "").split("\n");
+  const i = zeilen.findIndex((z) => /Ernte-Helferliste\s+\d{4}/i.test(z));
+  if (i < 0) return null;
+  const k = zeilen[i].match(/Ernte-Helferliste\s+(\d{4})(?:\s*\(\s*Stand\s+([^)]*)\))?/i);
+  const helfer = [], unklar = [];
+  for (const roh of zeilen.slice(i + 1)) {
+    const z = roh.replace(/^[\s*_~]+|[\s*_~]+$/g, "");   // WhatsApp-Formatierung (*fett*, _kursiv_) weg
+    if (!z) continue;
+    const h = z.match(/^(\d{1,2})\s+(.{1,40})$/);
+    if (!h || Number(h[1]) < 1 || helfer.some((x) => x.nr === Number(h[1]))) { unklar.push(z); continue; }
+    helfer.push({ nr: Number(h[1]), name: h[2].trim() });
+  }
+  return { jahr: Number(k[1]), stand: (k[2] || "").trim(), helfer, unklar };
+}
+function listeVergleichen(liste) {
+  const ausListe = new Map(liste.helfer.map((h) => [h.nr, h]));
+  const v = { neu: [], umbenannt: [], wieder: [], ab: [], gleich: 0, feld: 0 };
+  for (const h of liste.helfer) {
+    const x = S.helfer.find((y) => y.nr === h.nr);
+    if (!x) { v.neu.push(h); continue; }
+    let gleich = true;
+    if ((x.name || "") !== h.name) { v.umbenannt.push({ nr: h.nr, alt: x.name || "–", name: h.name }); gleich = false; }
+    if (x.aktiv === false) { v.wieder.push(h); gleich = false; }
+    if (gleich) v.gleich++;
+  }
+  for (const x of S.helfer) {
+    if (x.nr >= FELD_NR_AB) v.feld++;
+    else if (!ausListe.has(x.nr) && x.aktiv !== false) v.ab.push(x);
+  }
+  v.ergebnis = S.helfer.map((x) => (x.nr >= FELD_NR_AB ? x : ausListe.has(x.nr) ? { nr: x.nr, name: ausListe.get(x.nr).name, aktiv: true } : Object.assign({}, x, { aktiv: false })))
+    .concat(v.neu.map((h) => ({ nr: h.nr, name: h.name, aktiv: true }))).sort((a, b) => a.nr - b.nr);
+  v.aenderungen = v.neu.length + v.umbenannt.length + v.wieder.length + v.ab.length;
+  return v;
+}
+async function listeEinfuegen() {
+  if (!S.bereit) return;
+  let text = "";
+  try {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      // Nicht ewig auf die Erlaubnis warten; ohne sie gibt es das Feld zum Einfügen.
+      text = await Promise.race([navigator.clipboard.readText(), new Promise((ok) => setTimeout(() => ok(""), 2500))]);
+    }
+  } catch (e) { text = ""; }
+  dlgListe(listeLesen(text) ? text : "");
+}
+function dlgListe(vorgabe) {
+  const f = formular(T("liste_knopf"));
+  const feld = el("textarea", { class: "liste", id: "f-liste", "aria-label": T("liste_aria") });
+  feld.value = vorgabe || "";
+  const pruefen = el("button", { type: "button", class: "knopf klein", text: T("liste_pruefen") });
+  const vorschau = el("div", { class: "liste-vorschau" });
+  f.append(el("p", { class: "klein-text", text: T("liste_einfuegen_hinweis") }), feld, el("div", { class: "leiste" }, pruefen), vorschau);
+  let geprueft = null;
+  const m = fuss(f, T("liste_uebernehmen"), async () => {
+    if (!geprueft) { zeigen(); return geprueft ? null : m.textContent; }   // erst zeigen, was sich ändert; dann bestätigen
+    const { l, v } = geprueft;
+    const merker = { jahr: l.jahr, stand: l.stand, eingefuegt_am: new Date().toISOString() };
+    await S.sp.schreiben([], { helfer: v.ergebnis, helferliste: merker });
+    S.helfer = v.ergebnis; S.helferliste = merker;
+    zeichnen();
+    toast(T("liste_toast"));
+    return true;
+  });
+  function zeigen() {
+    geprueft = null; vorschau.replaceChildren(); m.className = "meldung"; m.textContent = "";
+    const l = listeLesen(feld.value);
+    if (!l) { m.textContent = T("liste_falsch"); return; }
+    if (l.unklar.length) { m.textContent = T("liste_unklar", l.unklar.slice(0, 3).join(" · ")); return; }
+    if (!l.helfer.length) { m.textContent = T("liste_leer"); return; }
+    const v = listeVergleichen(l);
+    geprueft = { l, v };
+    const block = (titel, zeilen) => (zeilen.length ? el("div", { class: "feld" }, el("span", { text: titel }), el("p", { class: "num", text: zeilen.join(" · ") })) : null);
+    vorschau.append(...[el("p", { text: T("liste_kopf", l.jahr, l.stand || "–") }),
+      S.saison && l.jahr !== S.saison ? el("p", { class: "meldung warn", text: T("liste_jahr_warn", l.jahr, S.saison) }) : null,
+      block(T("liste_neu", v.neu.length), v.neu.map((h) => h.nr + " " + h.name)),
+      block(T("liste_umbenannt", v.umbenannt.length), v.umbenannt.map((u) => u.nr + ": " + u.alt + " → " + u.name)),
+      block(T("liste_wieder", v.wieder.length), v.wieder.map((h) => h.nr + " " + h.name)),
+      block(T("liste_abgemeldet", v.ab.length), v.ab.map((x) => x.nr + " " + (x.name || "–"))),
+      v.aenderungen ? null : el("p", { text: T("liste_keine_aenderung") }),
+      el("p", { class: "klein-text", text: T("liste_gleich", v.gleich) + (v.feld ? " " + T("liste_feld", v.feld) : "") })].filter(Boolean));
+  }
+  pruefen.onclick = zeigen;
+  feld.addEventListener("input", () => { geprueft = null; vorschau.replaceChildren(); });
+  if (feld.value) zeigen(); else setTimeout(() => feld.focus(), 50);
 }
 
 /* ---------- Start ---------- */
@@ -1084,12 +1220,12 @@ async function vorschauFuellen() {
   S.helfer = (await S.sp.kvLesen(["helfer"])).helfer || [];
   const s1 = S.saetze[0] && S.saetze[0].id, s2 = (S.saetze[1] || S.saetze[0] || {}).id;
   if (!s1) return;
-  const kg = [15.3, 10.1, 15.5, 10.2, 10.3, 10.2], komp = [1.1, 1.2, 0.9, 1.6, 0.9, 2.1];
+  const kisten = [3, 2, 3, 2, 2, 2], komp = [1.1, 1.2, 0.9, 1.6, 0.9, 2.1];
   const liste = [];
   for (let nr = 1; nr <= 6; nr++) {
-    const satz = nr <= 4 ? s1 : s2, k = kg[nr - 1] > 12 ? 3 : 2;
+    const satz = nr <= 4 ? s1 : s2, k = kisten[nr - 1];
     liste.push({ zeit: "06:00:0" + nr, helfer: nr, art: "start", satz }, { zeit: "09:00:0" + nr, helfer: nr, art: "pause", satz }, { zeit: "09:30:0" + nr, helfer: nr, art: "weiter", satz }, { zeit: "12:00:0" + nr, helfer: nr, art: "ende", satz });
-    for (const z of ["07:30", "09:00", "10:30", "12:00"]) liste.push({ zeit: z + ":3" + nr, helfer: nr, art: "wiegung", satz, kisten: k, klasse1_kg: kg[nr - 1], kompost_kg: komp[nr - 1] });
+    for (const z of ["07:30", "09:00", "10:30", "12:00"]) liste.push({ zeit: z + ":3" + nr, helfer: nr, art: "wiegung", satz, kisten: k, klasse1_kg: k * KISTE_KG, kompost_kg: komp[nr - 1] });
   }
   await speichern(liste);
 }
@@ -1117,6 +1253,7 @@ async function start() {
   S.vorschau = kfg.vorschau === true;
   S.saetzeFehlen = !!kfg.fehlt;
   S.saetzeStand = kfg.stand || "";
+  S.saison = Number.isInteger(kfg.saison) ? kfg.saison : null;
   S.saetze = kfg.saetze.filter((s) => s && Number.isInteger(s.id) && s.aktiv !== false).map((s) => ({ id: s.id, schlag: String(s.schlag || ""), sorte: String(s.sorte || "") }));
 
   S.sp = idbSpeicher(S.vorschau ? "ernte-vorschau" : "ernte");
@@ -1126,11 +1263,12 @@ async function start() {
     S.sp = fluechtigerSpeicher();
   }
   let kv;
-  try { kv = await S.sp.kvLesen(["geraet", "helfer"]); await merkerLesen(); }
+  try { kv = await S.sp.kvLesen(["geraet", "helfer", "helferliste"]); await merkerLesen(); }
   catch (e) { fatal(T("nicht_lesbar", e && e.message || T("fehler"))); return; }
   if (!kv.geraet) { kv.geraet = S.vorschau ? "vorsch" : zufall(6); await S.sp.schreiben([], { geraet: kv.geraet }); }
   S.geraet = kv.geraet;
   S.helfer = Array.isArray(kv.helfer) ? kv.helfer.filter((x) => x && Number.isInteger(x.nr)) : [];
+  S.helferliste = kv.helferliste && typeof kv.helferliste === "object" ? kv.helferliste : null;
   S.bereit = true;
   if (S.vorschau) { try { await vorschauFuellen(); } catch (e) { /* Vorschau bleibt dann leer */ } }
   await endePruefen();
@@ -1165,6 +1303,7 @@ $("b-alleweiter").addEventListener("click", () => dlgSammel("weiter"));
 $("b-alleende").addEventListener("click", () => dlgSammel("ende"));
 $("b-alle-eintraege").addEventListener("click", () => { S.alleZeigen = !S.alleZeigen; zeichnen(); });
 $("b-neu").addEventListener("click", helferNeu);
+$("b-liste").addEventListener("click", listeEinfuegen);
 $("b-update").addEventListener("click", aktualisieren);
 for (const b of document.querySelectorAll("[data-sprache]")) b.addEventListener("click", () => spracheSetzen(b.dataset.sprache));
 // Die Sprachfrage beim ersten Öffnen lässt sich nicht wegdrücken (Zurück-Taste/Esc), sonst bliebe die Seite stehen.
