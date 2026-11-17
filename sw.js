@@ -2,7 +2,7 @@
 // Seite und Symbole: sofort aus dem Vorrat, im Hintergrund erneuern (neue Version gilt beim nächsten Öffnen).
 // saetze.json: zuerst aus dem Netz (höchstens 3 Sekunden warten), sonst aus dem Vorrat.
 const CACHE = "ernte-v1";                      // gleicher Name wie in index.html
-const DATEIEN = ["./", "./saetze.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
+const DATEIEN = ["./", "./saetze.json", "./manifest.webmanifest", "./manifest-ro.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(DATEIEN)).then(() => self.skipWaiting()));

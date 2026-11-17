@@ -138,89 +138,271 @@ textarea.roh { width: 100%; height: 90px; font-family: ui-monospace, Menlo, Cons
 </head>
 <body>
 <header>
-  <h1>Erdbeerernte</h1>
-  <label for="datum">Tag <input type="date" id="datum"></label>
+  <h1 data-t="h1">Erdbeerernte</h1>
+  <label for="datum"><span data-t="tag">Tag</span> <input type="date" id="datum"></label>
   <span id="stand">lädt …</span>
 </header>
 
 <main>
   <div id="hinweise" style="display:grid;gap:8px"></div>
 
-  <section class="summe num" aria-label="Tagessumme">
-    <div><b id="s-helfer">0</b><span>Helfer am Feld</span></div>
-    <div><b id="s-kisten">0</b><span>Kisten Klasse I</span></div>
-    <div><b id="s-kl1">0</b><span>kg Klasse I</span></div>
-    <div><b id="s-ko">0</b><span>kg Kompost</span></div>
+  <section class="summe num" aria-label="Tagessumme" data-t-aria="aria_summe">
+    <div><b id="s-helfer">0</b><span data-t="sum_helfer">Helfer am Feld</span></div>
+    <div><b id="s-kisten">0</b><span data-t="sum_kisten">Kisten Klasse I</span></div>
+    <div><b id="s-kl1">0</b><span data-t="sum_kl1">kg Klasse I</span></div>
+    <div><b id="s-ko">0</b><span data-t="sum_ko">kg Kompost</span></div>
   </section>
 
-  <section class="leiste" aria-label="Wichtigste Knöpfe">
-    <button type="button" class="knopf haupt gross" id="b-anmelden">Helfer anmelden</button>
+  <section class="leiste" aria-label="Wichtigste Knöpfe" data-t-aria="aria_haupt">
+    <button type="button" class="knopf haupt gross" id="b-anmelden" data-t="anmelden">Helfer anmelden</button>
     <button type="button" class="knopf gross" id="b-senden">Senden</button>
   </section>
-  <section class="leiste" aria-label="Für alle Helfer">
-    <button type="button" class="knopf" id="b-allepause">Alle Pause</button>
-    <button type="button" class="knopf" id="b-alleweiter">Alle weiter</button>
-    <button type="button" class="knopf rot" id="b-alleende">Alle Feierabend</button>
+  <section class="leiste" aria-label="Für alle Helfer" data-t-aria="aria_alle">
+    <button type="button" class="knopf" id="b-allepause" data-t="alle_pause">Alle Pause</button>
+    <button type="button" class="knopf" id="b-alleweiter" data-t="alle_weiter">Alle weiter</button>
+    <button type="button" class="knopf rot" id="b-alleende" data-t="alle_ende">Alle Feierabend</button>
   </section>
 
   <section aria-labelledby="h-helfer">
-    <h2 id="h-helfer">Helfer an diesem Tag</h2>
+    <h2 id="h-helfer" data-t="h_helfer">Helfer an diesem Tag</h2>
     <div class="karten" id="karten"></div>
   </section>
 
   <section aria-labelledby="h-saetze">
-    <h2 id="h-saetze">Je Satz</h2>
-    <div class="liste"><table class="num"><thead><tr><th>Satz</th><th class="r">Helfer</th><th class="r">Std.</th><th class="r">Kisten</th><th class="r">kg Kl. I</th><th class="r">kg Kompost</th><th class="r">Ø kg/Std.</th></tr></thead><tbody id="t-saetze"></tbody></table></div>
+    <h2 id="h-saetze" data-t="h_saetze">Je Satz</h2>
+    <div class="liste"><table class="num"><thead><tr><th data-t="th_satz">Satz</th><th class="r" data-t="th_helfer">Helfer</th><th class="r" data-t="th_std">Std.</th><th class="r" data-t="th_kisten">Kisten</th><th class="r" data-t="th_kl1">kg Kl. I</th><th class="r" data-t="th_ko">kg Kompost</th><th class="r" data-t="th_kgstd">Ø kg/Std.</th></tr></thead><tbody id="t-saetze"></tbody></table></div>
   </section>
 
   <section aria-labelledby="h-eintraege">
-    <h2 id="h-eintraege">Einträge des Tages</h2>
-    <div class="liste"><table class="num"><thead><tr><th>Zeit</th><th>Nr.</th><th>Was</th><th>Satz</th><th class="r">Kisten</th><th class="r">kg Kl. I</th><th class="r">kg Kompost</th><th></th></tr></thead><tbody id="t-eintraege"></tbody></table></div>
+    <h2 id="h-eintraege" data-t="h_eintraege">Einträge des Tages</h2>
+    <div class="liste"><table class="num"><thead><tr><th data-t="th_zeit">Zeit</th><th data-t="th_nr">Nr.</th><th data-t="th_was">Was</th><th data-t="th_satz">Satz</th><th class="r" data-t="th_kisten">Kisten</th><th class="r" data-t="th_kl1">kg Kl. I</th><th class="r" data-t="th_ko">kg Kompost</th><th></th></tr></thead><tbody id="t-eintraege"></tbody></table></div>
     <button type="button" class="knopf klein" id="b-alle-eintraege" hidden></button>
   </section>
 
   <details id="einstellungen">
-    <summary>Einstellungen und Erntehelfer</summary>
+    <summary data-t="einstellungen">Einstellungen und Erntehelfer</summary>
     <div class="inhalt">
       <div class="stamm">
-        <h2>Erntehelfer</h2>
-        <p class="klein-text">Nummer wie auf der Karte des Helfers. Abgereiste Helfer abmelden, nicht löschen.</p>
+        <h2 data-t="sprache">Sprache</h2>
+        <div class="wahl" role="group" data-t-aria="sprache" aria-label="Sprache">
+          <button type="button" data-sprache="de" lang="de" aria-pressed="false">Deutsch</button>
+          <button type="button" data-sprache="ro" lang="ro" aria-pressed="false">Română</button>
+        </div>
+      </div>
+      <div class="stamm">
+        <h2 data-t="erntehelfer">Erntehelfer</h2>
+        <p class="klein-text" data-t="stamm_hinweis">Nummer wie auf der Karte des Helfers. Abgereiste Helfer abmelden, nicht löschen.</p>
         <div id="stamm-liste" class="stamm"></div>
         <div class="zeile">
-          <input type="number" id="neu-nr" placeholder="Nr." min="1" step="1" inputmode="numeric" aria-label="Nummer des neuen Helfers">
-          <input type="text" id="neu-name" placeholder="Name oder Kürzel" maxlength="40" autocomplete="off" aria-label="Name des neuen Helfers">
-          <button type="button" class="knopf klein" id="b-neu">Hinzufügen</button>
+          <input type="number" id="neu-nr" placeholder="Nr." min="1" step="1" inputmode="numeric" aria-label="Nummer des neuen Helfers" data-t-aria="aria_neu_nr">
+          <input type="text" id="neu-name" placeholder="Name oder Kürzel" maxlength="40" autocomplete="off" aria-label="Name des neuen Helfers" data-t-ph="name_ph" data-t-aria="aria_neu_name">
+          <button type="button" class="knopf klein" id="b-neu" data-t="hinzufuegen">Hinzufügen</button>
         </div>
         <p class="meldung" id="stamm-meldung" role="alert"></p>
       </div>
       <div class="leiste">
-        <button type="button" class="knopf klein" id="b-alles-senden">Ganze Saison senden (Sicherung)</button>
-        <button type="button" class="knopf klein" id="b-update" hidden>Nach neuer Version suchen</button>
+        <button type="button" class="knopf klein" id="b-alles-senden" data-t="saison_knopf">Ganze Saison senden (Sicherung)</button>
+        <button type="button" class="knopf klein" id="b-update" hidden data-t="update">Nach neuer Version suchen</button>
       </div>
-      <p class="klein-text" id="installieren" hidden>Als App aufs Handy legen: Android (Chrome): Menü mit den drei Punkten, dann „Zum Startbildschirm hinzufügen“. iPhone (Safari): Teilen-Knopf, dann „Zum Home-Bildschirm“. Danach immer über dieses Symbol öffnen.</p>
+      <p class="klein-text" id="installieren" hidden data-t="installieren">Als App aufs Handy legen: Android (Chrome): Menü mit den drei Punkten, dann „Zum Startbildschirm hinzufügen“. iPhone (Safari): Teilen-Knopf, dann „Zum Home-Bildschirm“. Danach immer über dieses Symbol öffnen.</p>
       <p class="klein-text num" id="info"></p>
     </div>
   </details>
 </main>
 
 <dialog id="dlg"><form id="dlg-form" method="dialog"></form></dialog>
-<div id="toast" hidden role="status"><span id="toast-text"></span><button type="button" id="toast-undo">Rückgängig</button></div>
+<div id="toast" hidden role="status"><span id="toast-text"></span><button type="button" id="toast-undo" data-t="rueckgaengig">Rückgängig</button></div>
 
 <script>
 "use strict";
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.1.1";
 const CACHE = "ernte-v1";                      // gleicher Name wie in sw.js
-const DATEIEN = ["./", "./saetze.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
-const ARTEN = { start: "Start", pause: "Pause", weiter: "Weiter", ende: "Feierabend", wiegung: "Wiegung" };
+const DATEIEN = ["./", "./saetze.json", "./manifest.webmanifest", "./manifest-ro.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 const KISTE_MIN = 4.6, KISTE_MAX = 6.0;        // kg je Kiste, außerhalb wird nachgefragt
 const KISTEN_VIEL = 30, KOMPOST_VIEL = 20;     // je Wiegung, darüber wird nachgefragt
 const ERINNERN_NACH_STD = 2;                   // „Senden“ wird auffällig, wenn Einträge so lange ungesendet sind
+const ARTEN = ["start", "pause", "weiter", "ende", "wiegung"];   // Arten in der Ernte-Datei (nie übersetzen)
+
+/* ---------- Texte je Sprache. Alles, was auf dem Bildschirm steht, kommt von hier.
+   Satz- und Helfernamen werden nicht übersetzt; die Ernte-Datei bleibt in beiden Sprachen gleich. ---------- */
+const TEXTE = {
+  de: {
+    locale: "de-DE", manifest: "./manifest.webmanifest", titel: "Erdbeerernte erfassen", kurzname: "Ernte",
+    wochentage: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+    datum_kurz: (wt, tg, m) => wt + ". " + tg + "." + m + ".",
+    // Kopf, Summen, Knöpfe, Überschriften
+    h1: "Erdbeerernte", tag: "Tag", laedt: "lädt …", laedt_gross: "Lädt …", fehler: "Fehler",
+    aria_summe: "Tagessumme", sum_helfer: "Helfer am Feld", sum_kisten: "Kisten Klasse I", sum_kl1: "kg Klasse I", sum_ko: "kg Kompost",
+    aria_haupt: "Wichtigste Knöpfe", anmelden: "Helfer anmelden", senden: "Senden", senden_n: (n) => "Senden (" + n + " neu)",
+    aria_alle: "Für alle Helfer", alle_pause: "Alle Pause", alle_weiter: "Alle weiter", alle_ende: "Alle Feierabend",
+    h_helfer: "Helfer an diesem Tag", h_saetze: "Je Satz", h_eintraege: "Einträge des Tages",
+    th_satz: "Satz", th_helfer: "Helfer", th_std: "Std.", th_kisten: "Kisten", th_kl1: "kg Kl. I", th_ko: "kg Kompost", th_kgstd: "Ø kg/Std.",
+    th_zeit: "Zeit", th_nr: "Nr.", th_was: "Was",
+    einstellungen: "Einstellungen und Erntehelfer", sprache: "Sprache", erntehelfer: "Erntehelfer",
+    stamm_hinweis: "Nummer wie auf der Karte des Helfers. Abgereiste Helfer abmelden, nicht löschen.",
+    aria_neu_nr: "Nummer des neuen Helfers", name_ph: "Name oder Kürzel", aria_neu_name: "Name des neuen Helfers", hinzufuegen: "Hinzufügen",
+    saison_knopf: "Ganze Saison senden (Sicherung)", update: "Nach neuer Version suchen", suche: "Suche …",
+    kein_internet: "Kein Internet. Später nochmal versuchen.",
+    installieren: "Als App aufs Handy legen: Android (Chrome): Menü mit den drei Punkten, dann „Zum Startbildschirm hinzufügen“. iPhone (Safari): Teilen-Knopf, dann „Zum Home-Bildschirm“. Danach immer über dieses Symbol öffnen.",
+    rueckgaengig: "Rückgängig",
+    // Arten und Zustände
+    art_start: "Start", art_pause: "Pause", art_weiter: "Weiter", art_ende: "Feierabend", art_wiegung: "Wiegung",
+    status_arbeitet: "pflückt", status_pause: "Pause", status_feierabend: "Feierabend", status_fehlt: "nicht angemeldet", ende_fehlt_chip: "Feierabend fehlt",
+    // Karten und Listen
+    nr: (n) => "Nr. " + n, satz_nr: (id) => "Satz " + id,
+    std: (v) => v + " Std.", kisten_n: (n) => n + " Kisten", kg_kompost: (v) => v + " kg Kompost", kg_std: (v) => v + " kg/Std.",
+    wiegen: "Wiegen", mehr: "Mehr", storniert: "storniert", storno: "Storno",
+    leer_anmelden: "Noch niemand angemeldet. Oben auf „Helfer anmelden“ tippen, dann Satz und Helfer wählen.",
+    leer_anlegen: "Zuerst unten bei „Einstellungen und Erntehelfer“ die Helfer mit ihrer Nummer anlegen.",
+    keine_eintraege: "Noch keine Einträge an diesem Tag.", nur_30: "Nur die letzten 30 zeigen", alle_n: (n) => "Alle " + n + " Einträge zeigen",
+    ungesendet: (n) => n + " ungesendet", alles_gesendet: "alles gesendet",
+    info: (g, v, n, st) => "Gerät " + g + " · App " + v + " · " + n + " Sätze, Stand " + st,
+    zuletzt: (z) => " · zuletzt gesendet " + z, geschuetzt: " · Speicher geschützt",
+    // Hinweise oben
+    vorschau: "Vorschau mit Testdaten. Hier kannst du alles ausprobieren. Das Senden per WhatsApp funktioniert erst auf der echten Adresse.",
+    saetze_fehlen: "Die Liste der Sätze (Feld und Sorte) fehlt noch. Die Seite einmal mit Internet öffnen.",
+    nachtrag: (d) => "Du trägst für " + d + " nach. Die Uhrzeit musst du selbst eintragen.", zurueck_heute: "Zurück zu heute",
+    ende_fehlt_tag: (d, nrs) => "Am " + d + " fehlt der Feierabend bei Nr. " + nrs + ".", tag_oeffnen: "Tag öffnen",
+    // Speichern und Fehler
+    rueck_fehler: "Rückgängig hat nicht geklappt. Bitte den Eintrag unten stornieren.",
+    speicher_voll: "Der Speicher des Handys ist voll. Bitte Platz schaffen und nochmal versuchen.",
+    speichern_fehler: (m) => "Speichern hat nicht geklappt (" + m + "). Bitte nochmal versuchen.",
+    err_speicher: "Speicherfehler", err_abbruch: "Speichern abgebrochen", err_oeffnen: "Speicher lässt sich nicht öffnen", err_blockiert: "Speicher ist blockiert",
+    kein_speicher: "Dieses Handy kann hier nichts speichern (privater Modus oder Speicher gesperrt). Bitte die Seite im normalen Browser öffnen. Es wurde nichts erfasst.",
+    nicht_lesbar: (m) => "Die gespeicherten Daten lassen sich nicht lesen (" + m + "). Seite neu öffnen; wenn es bleibt, Julius Bescheid sagen.",
+    start_fehler: (m) => "Die Seite konnte nicht starten (" + m + "). Bitte neu öffnen.",
+    gespeichert: (nr, art) => "Nr. " + nr + ": " + art + " gespeichert",
+    // Dialoge allgemein
+    abbrechen: "Abbrechen", speichern: "Speichern", zeit_jetzt: "Uhrzeit (jetzt; bei Nachtrag ändern)", zeit_am: (d) => "Uhrzeit am " + d,
+    zeit_fehlt: "Bitte die Uhrzeit angeben.", zeit_zukunft: "Die Uhrzeit liegt in der Zukunft.",
+    satz_feld: "Satz (Feld · Sorte)", keine_saetze: "Keine Sätze vorhanden. Die Seite einmal mit Internet öffnen.", aendern: "ändern",
+    satz_waehlen: "Bitte den Satz wählen.",
+    // Helfer anmelden
+    aria_helfer: "Helfer", keine_helfer: "Noch keine Helfer angelegt. Unten bei „Einstellungen und Erntehelfer“ anlegen.",
+    helfer_wahl: "Helfer (• = schon angemeldet, wechselt dann den Satz)", starten: "Starten", helfer_waehlen: "Bitte mindestens einen Helfer wählen.",
+    gestartet: (n, satz) => n + " Helfer auf " + satz + " gestartet",
+    // Wiegen
+    wiegen_titel: (nr) => "Wiegen: Nr. " + nr, kisten_label: "Kisten Klasse I (je 10 × 500 g)", kiste_weniger: "eine Kiste weniger", kiste_mehr: "eine Kiste mehr",
+    kg_ph: "z. B. 15,4", gewicht_label: "Gewicht Klasse I, kg", kompost_label: "Kompost, kg",
+    kisten_ganz: "Kisten: bitte eine ganze Zahl.", gewicht_zahl: "Gewicht bitte als Zahl eintragen, z. B. 15,4.",
+    gewicht_fehlt: (k) => "Bitte das Gewicht der " + k + " Kiste(n) eintragen.", ohne_kisten: "Gewicht ohne Kisten: bitte die Kistenzahl eintragen.",
+    nichts_eingetragen: "Bitte Kisten oder Kompost eintragen.",
+    je_kiste: (v) => v + " kg je Kiste", auf_einmal: (k) => k + " Kisten auf einmal",
+    ungewoehnlich: (l) => "Ungewöhnlich: " + l + ". Stimmt das? Dann nochmal „Speichern“.",
+    gewogen: (nr, k, g, c) => "Nr. " + nr + ": " + k + " Kisten, " + g + " kg" + (c ? ", Kompost " + c + " kg" : ""),
+    // Mehr, Alle, Storno
+    was_passiert: "Was ist passiert?", satz_wechseln: "Satz wechseln", wieder_starten: "Wieder starten", weiter_nach_pause: "Weiter nach Pause",
+    hinweis_wechsel: "Vor einem Satzwechsel bitte erst wiegen, sonst zählen die Kisten zum neuen Satz.", was_waehlen: "Bitte auswählen, was passiert ist.",
+    niemand_pause: "Niemand ist in der Pause.", niemand: "Niemand ist angemeldet.", alle_titel: (a) => "Alle: " + a,
+    betroffen: (n, nrs) => n + " Helfer: Nr. " + nrs, fuer_alle: "Für alle speichern", sammel_gespeichert: (n, a) => n + " × " + a + " gespeichert",
+    storno_titel: "Eintrag stornieren?", storno_wiegung: (k, g, c) => k + " Kisten, " + g + " kg, Kompost " + c + " kg",
+    storno_hinweis: "Der Eintrag bleibt sichtbar, zählt aber nicht mehr. Den richtigen Wert danach neu eintragen.", stornieren: "Stornieren",
+    // Senden
+    saison_titel: "Ganze Saison senden", vorbereiten: "Bereite die Datei vor …", jetzt_senden: "Jetzt senden", schliessen: "Schließen",
+    gesendet: (n) => "Gesendet: " + n + " Einträge. Bitte in WhatsApp nachsehen, ob die Datei verschickt ist.", aria_inhalt: "Inhalt der Datei",
+    ersatzweg: "Ersatzweg: Datei speichern und in WhatsApp als Dokument an Julius schicken. Danach hier bestätigen.",
+    datei_speichern: "Datei speichern", kopiert: "Text kopiert.", von_hand: "Bitte den markierten Text von Hand kopieren.", text_kopieren: "Text kopieren",
+    geschickt: "Ich habe die Datei geschickt", nichts_senden: "Es gibt nichts zu senden.",
+    lage: (n, tage) => n + " Einträge, " + (tage.length === 1 ? "Tag: " : tage.length + " Tage: ") + tage.join(", "),
+    teilen_ja: "Im nächsten Schritt WhatsApp und Julius wählen.",
+    teilen_nein: "Dieses Gerät kann nicht direkt teilen: Datei speichern, in WhatsApp als Dokument an Julius schicken, danach unten bestätigen.",
+    ohne_ende: (nrs) => "Noch ohne Feierabend: Nr. " + nrs + ". Zwischendurch senden ist in Ordnung; nach dem Feierabend bitte nochmal senden.",
+    share_titel: (t) => "Ernte " + t, abgebrochen: "Abgebrochen. Es wurde nichts verschickt.",
+    teilen_fehler: "Das Teilen hat nicht geklappt. Bitte den Weg unten benutzen.",
+    nur_tag: (d) => "Stattdessen nur " + d + " komplett senden", schon_gesendet: "Alles ist schon gesendet.", nochmal_tag: (d) => d + " nochmal komplett senden",
+    // Erntehelfer verwalten
+    aria_name: (nr) => "Name Nr. " + nr, wieder_anmelden: "Wieder anmelden", abmelden: "Abmelden",
+    nr_bereich: "Nummer: bitte eine ganze Zahl von 1 bis 9999.", nr_gibts: (nr) => "Nr. " + nr + " gibt es schon."
+  },
+  ro: {
+    locale: "ro-RO", manifest: "./manifest-ro.webmanifest", titel: "Înregistrare recoltă căpșuni", kurzname: "Recoltă",
+    wochentage: ["Du", "Lu", "Ma", "Mi", "Jo", "Vi", "Sâ"],
+    datum_kurz: (wt, tg, m) => wt + " " + tg + "." + m,
+    h1: "Recoltă căpșuni", tag: "Ziua", laedt: "se încarcă …", laedt_gross: "Se încarcă …", fehler: "Eroare",
+    aria_summe: "Total pe zi", sum_helfer: "Culegători pe câmp", sum_kisten: "Lăzi clasa I", sum_kl1: "kg clasa I", sum_ko: "kg compost",
+    aria_haupt: "Butoane principale", anmelden: "Înscrie culegători", senden: "Trimite", senden_n: (n) => "Trimite (" + n + " noi)",
+    aria_alle: "Pentru toți culegătorii", alle_pause: "Toți pauză", alle_weiter: "Toți continuă", alle_ende: "Toți terminat",
+    h_helfer: "Culegători în această zi", h_saetze: "Pe parcele", h_eintraege: "Înregistrările zilei",
+    th_satz: "Parcela", th_helfer: "Culeg.", th_std: "Ore", th_kisten: "Lăzi", th_kl1: "kg cl. I", th_ko: "kg compost", th_kgstd: "Ø kg/oră",
+    th_zeit: "Ora", th_nr: "Nr.", th_was: "Ce",
+    einstellungen: "Setări și culegători", sprache: "Limba", erntehelfer: "Culegători",
+    stamm_hinweis: "Numărul ca pe cardul culegătorului. Culegătorii plecați se dezactivează, nu se șterg.",
+    aria_neu_nr: "Numărul culegătorului nou", name_ph: "Nume sau inițiale", aria_neu_name: "Numele culegătorului nou", hinzufuegen: "Adaugă",
+    saison_knopf: "Trimite tot sezonul (copie de siguranță)", update: "Caută versiune nouă", suche: "Caut …",
+    kein_internet: "Fără internet. Încearcă mai târziu.",
+    installieren: "Pune pagina ca aplicație pe telefon: Android (Chrome): meniul cu trei puncte, apoi „Adaugă pe ecranul de pornire”. iPhone (Safari): butonul Partajează, apoi „Adaugă pe ecranul principal”. Apoi deschide-o mereu de la această pictogramă.",
+    rueckgaengig: "Anulează",
+    art_start: "Start", art_pause: "Pauză", art_weiter: "Continuă", art_ende: "Terminat", art_wiegung: "Cântărire",
+    status_arbeitet: "culege", status_pause: "pauză", status_feierabend: "terminat", status_fehlt: "neînscris", ende_fehlt_chip: "lipsește terminarea",
+    nr: (n) => "Nr. " + n, satz_nr: (id) => "Parcela " + id,
+    std: (v) => v + " ore", kisten_n: (n) => n + " lăzi", kg_kompost: (v) => v + " kg compost", kg_std: (v) => v + " kg/oră",
+    wiegen: "Cântărește", mehr: "Mai mult", storniert: "anulat", storno: "Anulează",
+    leer_anmelden: "Încă nu e nimeni înscris. Apasă sus pe „Înscrie culegători”, apoi alege parcela și culegătorii.",
+    leer_anlegen: "Mai întâi adaugă jos, la „Setări și culegători”, culegătorii cu numărul lor.",
+    keine_eintraege: "Încă nu sunt înregistrări în această zi.", nur_30: "Arată doar ultimele 30", alle_n: (n) => "Arată toate cele " + n + " înregistrări",
+    ungesendet: (n) => n + " netrimise", alles_gesendet: "totul trimis",
+    info: (g, v, n, st) => "Telefon " + g + " · App " + v + " · " + n + " parcele, actualizat " + st,
+    zuletzt: (z) => " · ultima trimitere " + z, geschuetzt: " · memorie protejată",
+    vorschau: "Previzualizare cu date de test. Aici poți încerca totul. Trimiterea pe WhatsApp merge doar pe adresa reală.",
+    saetze_fehlen: "Lista parcelelor (câmp și soi) lipsește încă. Deschide pagina o dată cu internet.",
+    nachtrag: (d) => "Completezi pentru " + d + ". Ora trebuie s-o introduci tu.", zurueck_heute: "Înapoi la azi",
+    ende_fehlt_tag: (d, nrs) => "Pe " + d + " lipsește terminarea la nr. " + nrs + ".", tag_oeffnen: "Deschide ziua",
+    rueck_fehler: "Anularea n-a reușit. Te rog anulează înregistrarea mai jos.",
+    speicher_voll: "Memoria telefonului e plină. Fă loc și încearcă din nou.",
+    speichern_fehler: (m) => "Salvarea n-a reușit (" + m + "). Încearcă din nou.",
+    err_speicher: "Eroare de memorie", err_abbruch: "Salvare întreruptă", err_oeffnen: "Memoria nu se poate deschide", err_blockiert: "Memoria este blocată",
+    kein_speicher: "Acest telefon nu poate salva nimic aici (mod privat sau memorie blocată). Deschide pagina în browserul normal. Nu s-a înregistrat nimic.",
+    nicht_lesbar: (m) => "Datele salvate nu se pot citi (" + m + "). Redeschide pagina; dacă rămâne așa, anunță-l pe Julius.",
+    start_fehler: (m) => "Pagina nu a putut porni (" + m + "). Te rog redeschide-o.",
+    gespeichert: (nr, art) => "Nr. " + nr + ": " + art + " – salvat",
+    abbrechen: "Renunță", speichern: "Salvează", zeit_jetzt: "Ora (acum; schimb-o la completări)", zeit_am: (d) => "Ora pe " + d,
+    zeit_fehlt: "Te rog introdu ora.", zeit_zukunft: "Ora este în viitor.",
+    satz_feld: "Parcela (câmp · soi)", keine_saetze: "Nu există parcele. Deschide pagina o dată cu internet.", aendern: "schimbă",
+    satz_waehlen: "Te rog alege parcela.",
+    aria_helfer: "Culegători", keine_helfer: "Încă nu sunt culegători. Adaugă-i jos, la „Setări și culegători”.",
+    helfer_wahl: "Culegători (• = deja înscris, atunci schimbă parcela)", starten: "Pornește", helfer_waehlen: "Te rog alege cel puțin un culegător.",
+    gestartet: (n, satz) => n + " culegători porniți pe " + satz,
+    wiegen_titel: (nr) => "Cântărire: nr. " + nr, kisten_label: "Lăzi clasa I (câte 10 × 500 g)", kiste_weniger: "o ladă mai puțin", kiste_mehr: "o ladă mai mult",
+    kg_ph: "de ex. 15,4", gewicht_label: "Greutate clasa I, kg", kompost_label: "Compost, kg",
+    kisten_ganz: "Lăzi: te rog un număr întreg.", gewicht_zahl: "Introdu greutatea ca număr, de ex. 15,4.",
+    gewicht_fehlt: (k) => (k === 1 ? "Te rog introdu greutatea lăzii." : "Te rog introdu greutatea celor " + k + " lăzi."),
+    ohne_kisten: "Greutate fără lăzi: te rog introdu numărul de lăzi.",
+    nichts_eingetragen: "Te rog introdu lăzi sau compost.",
+    je_kiste: (v) => v + " kg pe ladă", auf_einmal: (k) => k + " lăzi deodată",
+    ungewoehnlich: (l) => "Neobișnuit: " + l + ". E corect? Atunci apasă din nou „Salvează”.",
+    gewogen: (nr, k, g, c) => "Nr. " + nr + ": " + k + " lăzi, " + g + " kg" + (c ? ", compost " + c + " kg" : ""),
+    was_passiert: "Ce s-a întâmplat?", satz_wechseln: "Schimbă parcela", wieder_starten: "Pornește din nou", weiter_nach_pause: "Continuă după pauză",
+    hinweis_wechsel: "Înainte de schimbarea parcelei cântărește mai întâi, altfel lăzile se socotesc la parcela nouă.", was_waehlen: "Te rog alege ce s-a întâmplat.",
+    niemand_pause: "Nimeni nu e în pauză.", niemand: "Nimeni nu e înscris.", alle_titel: (a) => "Toți: " + a,
+    betroffen: (n, nrs) => n + " culegători: nr. " + nrs, fuer_alle: "Salvează pentru toți", sammel_gespeichert: (n, a) => n + " × " + a + " – salvat",
+    storno_titel: "Anulezi înregistrarea?", storno_wiegung: (k, g, c) => k + " lăzi, " + g + " kg, compost " + c + " kg",
+    storno_hinweis: "Înregistrarea rămâne vizibilă, dar nu se mai socotește. Introdu apoi din nou valoarea corectă.", stornieren: "Anulează",
+    saison_titel: "Trimite tot sezonul", vorbereiten: "Pregătesc fișierul …", jetzt_senden: "Trimite acum", schliessen: "Închide",
+    gesendet: (n) => "Trimis: " + n + " înregistrări. Verifică în WhatsApp dacă fișierul a plecat.", aria_inhalt: "Conținutul fișierului",
+    ersatzweg: "Variantă de rezervă: salvează fișierul și trimite-l în WhatsApp ca document lui Julius. Apoi confirmă aici.",
+    datei_speichern: "Salvează fișierul", kopiert: "Text copiat.", von_hand: "Te rog copiază manual textul marcat.", text_kopieren: "Copiază textul",
+    geschickt: "Am trimis fișierul", nichts_senden: "Nu e nimic de trimis.",
+    lage: (n, tage) => n + " înregistrări, " + (tage.length === 1 ? "ziua: " : tage.length + " zile: ") + tage.join(", ") + ".",
+    teilen_ja: "La pasul următor alege WhatsApp și pe Julius.",
+    teilen_nein: "Acest telefon nu poate partaja direct: salvează fișierul, trimite-l în WhatsApp ca document lui Julius, apoi confirmă mai jos.",
+    ohne_ende: (nrs) => "Încă fără terminare: nr. " + nrs + ". E în regulă să trimiți între timp; după terminare trimite încă o dată.",
+    share_titel: (t) => "Recoltă " + t, abgebrochen: "Întrerupt. Nu s-a trimis nimic.",
+    teilen_fehler: "Partajarea n-a reușit. Folosește varianta de mai jos.",
+    nur_tag: (d) => "Trimite în schimb doar ziua " + d + " complet", schon_gesendet: "Totul este deja trimis.", nochmal_tag: (d) => "Trimite din nou ziua " + d + " complet",
+    aria_name: (nr) => "Nume nr. " + nr, wieder_anmelden: "Reactivează", abmelden: "Dezactivează",
+    nr_bereich: "Număr: te rog un număr întreg de la 1 la 9999.", nr_gibts: (nr) => "Nr. " + nr + " există deja."
+  }
+};
+let SPRACHE = "de";
+// Text in der gewählten Sprache; Einträge mit Platzhaltern sind Funktionen.
+function T(k, ...a) { const v = k in TEXTE[SPRACHE] ? TEXTE[SPRACHE][k] : TEXTE.de[k]; return typeof v === "function" ? v(...a) : v; }
+function artText(a) { return ARTEN.includes(a) ? T("art_" + a) : a; }
 
 const S = {
   sp: null, geraet: "", vorschau: false, saetzeFehlen: false, saetzeStand: "",
   datum: heute(), folgtHeute: true, eintraege: [], helfer: [], saetze: [],
   offen: {}, offenSeit: null, letzterVersand: null, fehltEnde: [],
-  alleZeigen: false, bereit: false, fatal: "", dauerhaft: null, sw: false
+  alleZeigen: false, bereit: false, fatal: "", dauerhaft: null, sw: false, spracheFrage: false
 };
 const $ = (id) => document.getElementById(id);
 
@@ -229,7 +411,7 @@ function zw(n) { return String(n).padStart(2, "0"); }
 function tagText(d) { return d.getFullYear() + "-" + zw(d.getMonth() + 1) + "-" + zw(d.getDate()); }
 function heute() { return tagText(new Date()); }
 function datumPlus(datum, tage) { const [j, m, t] = datum.split("-").map(Number); return tagText(new Date(j, m - 1, t + tage)); }
-function datumKurz(datum) { const [j, m, t] = datum.split("-").map(Number); return ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][new Date(j, m - 1, t).getDay()] + ". " + zw(t) + "." + zw(m) + "."; }
+function datumKurz(datum) { const [j, m, tg] = datum.split("-").map(Number); return T("datum_kurz", T("wochentage")[new Date(j, m - 1, tg).getDay()], zw(tg), zw(m)); }
 function jetztZeit() { const d = new Date(); return zw(d.getHours()) + ":" + zw(d.getMinutes()); }
 function minuten(z) { const [h, m, s] = z.split(":").map(Number); return h * 60 + m + (s || 0) / 60; }
 function zufall(n) { let s = ""; while (s.length < n) s += Math.random().toString(36).slice(2); return s.slice(0, n); }
@@ -241,7 +423,7 @@ function zahl(t) {
   if (!/^\d+([.,]\d+)?$/.test(s)) return NaN;
   return Number(s.replace(",", "."));
 }
-function de(n, s = 1) { return rund2(n).toLocaleString("de-DE", { minimumFractionDigits: s, maximumFractionDigits: s }); }
+function de(n, s = 1) { return rund2(n).toLocaleString(T("locale"), { minimumFractionDigits: s, maximumFractionDigits: s }); }
 function nachZeit(a, b) { return a.zeit < b.zeit ? -1 : a.zeit > b.zeit ? 1 : String(a.erfasst_am).localeCompare(String(b.erfasst_am)); }
 function el(tag, attrs = {}, ...kinder) {
   const e = document.createElement(tag);
@@ -254,8 +436,19 @@ function el(tag, attrs = {}, ...kinder) {
   return e;
 }
 function helferName(nr) { const h = S.helfer.find((x) => x.nr === nr); return h ? h.name : ""; }
-function satzName(id) { const s = S.saetze.find((x) => x.id === id); return s ? s.schlag + " · " + s.sorte : (id ? "Satz " + id : "–"); }
-function zeitMitSekunden(hhmm) { return hhmm + ":" + (S.datum === heute() && hhmm === jetztZeit() ? zw(new Date().getSeconds()) : "00"); }
+function satzName(id) { const s = S.saetze.find((x) => x.id === id); return s ? s.schlag + " · " + s.sorte : (id ? T("satz_nr", id) : "–"); }
+// Uhrzeit mit Sekunden für einen neuen Eintrag. Die Sekunden legen die Reihenfolge innerhalb einer Minute fest:
+// Ist die Minute „jetzt“, gelten die aktuellen Sekunden. Hat der Helfer in derselben Minute schon Einträge, kommt der
+// neue immer danach (sonst landete z. B. ein „Feierabend“, gespeichert kurz nach dem Minutenwechsel mit :00, vor einer
+// „Pause“ von :53 derselben Minute, und der Helfer galt weiter als pflückend).
+function zeitMitSekunden(hhmm, nr) {
+  let sek = S.datum === heute() && hhmm === jetztZeit() ? new Date().getSeconds() : 0;
+  for (const e of S.eintraege) {
+    if (e.helfer !== nr || e.zeit.slice(0, 5) !== hhmm) continue;
+    sek = Math.max(sek, Math.min(59, (Number(e.zeit.slice(6, 8)) || 0) + 1));
+  }
+  return hhmm + ":" + zw(sek);
+}
 
 /* ---------- Speicher auf dem Handy (IndexedDB). Jede Eingabe wird sofort geschrieben. ---------- */
 function idbSpeicher(name) {
@@ -266,8 +459,8 @@ function idbSpeicher(name) {
       try { t = db.transaction(stores, modus); } catch (e) { nein(e); return; }
       const erg = {};
       t.oncomplete = () => ok(erg);
-      t.onerror = () => nein(t.error || new Error("Speicherfehler"));
-      t.onabort = () => nein(t.error || new Error("Speichern abgebrochen"));
+      t.onerror = () => nein(t.error || new Error(T("err_speicher")));
+      t.onabort = () => nein(t.error || new Error(T("err_abbruch")));
       try { arbeit(t, erg); } catch (e) { try { t.abort(); } catch (_) { /* schon beendet */ } nein(e); }
     });
   }
@@ -287,8 +480,8 @@ function idbSpeicher(name) {
           if (!d.objectStoreNames.contains("kv")) d.createObjectStore("kv");
         };
         req.onsuccess = () => { db = req.result; db.onversionchange = () => db.close(); ok(); };
-        req.onerror = () => nein(req.error || new Error("Speicher lässt sich nicht öffnen"));
-        req.onblocked = () => nein(new Error("Speicher ist blockiert"));
+        req.onerror = () => nein(req.error || new Error(T("err_oeffnen")));
+        req.onblocked = () => nein(new Error(T("err_blockiert")));
       });
     },
     tag: (datum) => lesen("datum", IDBKeyRange.only(datum)),
@@ -360,6 +553,36 @@ function auswerten(eintraege, jetztMin) {
 }
 function tagAuswerten() { return auswerten(S.eintraege, S.datum === heute() ? minuten(jetztZeit()) : null); }
 
+/* ---------- Sprache: beim ersten Öffnen fragen, Wahl auf dem Handy merken, unter „Einstellungen“ umschalten ---------- */
+function spracheLaden() { try { const s = localStorage.getItem("ernte.sprache"); return s && TEXTE[s] ? s : null; } catch (e) { return null; } }
+function statischUebersetzen() {
+  document.documentElement.lang = SPRACHE;
+  document.title = T("titel");
+  document.querySelector('meta[name="apple-mobile-web-app-title"]').setAttribute("content", T("kurzname"));
+  document.querySelector('link[rel="manifest"]').setAttribute("href", T("manifest"));
+  for (const e of document.querySelectorAll("[data-t]")) e.textContent = T(e.dataset.t);
+  for (const e of document.querySelectorAll("[data-t-ph]")) e.placeholder = T(e.dataset.tPh);
+  for (const e of document.querySelectorAll("[data-t-aria]")) e.setAttribute("aria-label", T(e.dataset.tAria));
+  for (const b of document.querySelectorAll("[data-sprache]")) b.setAttribute("aria-pressed", String(b.dataset.sprache === SPRACHE));
+}
+function spracheSetzen(s) {
+  if (!TEXTE[s]) return;
+  SPRACHE = s;
+  try { localStorage.setItem("ernte.sprache", s); } catch (e) { /* gilt dann nur bis zum Schließen */ }
+  statischUebersetzen();
+  zeichnen();
+}
+function spracheErfragen() {
+  return new Promise((ok) => {
+    const f = formular("Sprache · Limba");
+    const knopf = (s, text) => el("button", { type: "button", class: "knopf haupt gross", lang: s, text,
+      onclick: () => { S.spracheFrage = false; spracheSetzen(s); dlgZu(); ok(); } });
+    f.append(el("div", { class: "leiste" }, knopf("de", "Deutsch"), knopf("ro", "Română")));
+    S.spracheFrage = true;
+    dlgAuf();
+  });
+}
+
 /* ---------- Anzeige ---------- */
 function offenAnzahl() { return Object.values(S.offen).reduce((a, b) => a + b, 0); }
 
@@ -374,26 +597,25 @@ function zeichnen() {
 
   const karten = $("karten"); karten.replaceChildren();
   const reihen = [...pro.values()].sort((a, b) => a.nr - b.nr);
-  if (!reihen.length) karten.append(el("p", { class: "leer", text: !S.bereit ? "Lädt …" : S.helfer.some((x) => x.aktiv !== false) ? "Noch niemand angemeldet. Oben auf „Helfer anmelden“ tippen, dann Satz und Helfer wählen." : "Zuerst unten bei „Einstellungen und Erntehelfer“ die Helfer mit ihrer Nummer anlegen." }));
-  const statusText = { arbeitet: "pflückt", pause: "Pause", feierabend: "Feierabend", fehlt: "nicht angemeldet" };
+  if (!reihen.length) karten.append(el("p", { class: "leer", text: !S.bereit ? T("laedt_gross") : S.helfer.some((x) => x.aktiv !== false) ? T("leer_anmelden") : T("leer_anlegen") }));
   for (const p of reihen) {
     const std = p.min / 60;
     const pause = p.status === "pause";
     const endeFehlt = !istHeute && (p.status === "arbeitet" || pause);
     karten.append(el("article", { class: "karte " + (endeFehlt ? "fehlt" : p.status) },
       el("div", { class: "kopf" }, el("span", { class: "nr num", text: p.nr }), el("span", { class: "name", text: helferName(p.nr) || "–" }),
-        el("span", { class: "chip " + (endeFehlt ? "fehlt" : p.status), text: endeFehlt ? "Feierabend fehlt" : statusText[p.status] })),
+        el("span", { class: "chip " + (endeFehlt ? "fehlt" : p.status), text: endeFehlt ? T("ende_fehlt_chip") : T("status_" + p.status) })),
       el("div", { class: "satz", text: satzName(p.satz) }),
       el("div", { class: "zahlen num" },
-        el("span", { text: de(std) + " Std." }),
-        el("span", { text: p.kisten + " Kisten" }),
+        el("span", { text: T("std", de(std)) }),
+        el("span", { text: T("kisten_n", p.kisten) }),
         el("span", { class: "kl1", text: de(p.kl1) + " kg" }),
-        el("span", { class: "ko", text: de(p.ko) + " kg Kompost" }),
-        el("span", { text: std > 0.05 ? de(p.kl1 / std) + " kg/Std." : "– kg/Std." })),
+        el("span", { class: "ko", text: T("kg_kompost", de(p.ko)) }),
+        el("span", { text: T("kg_std", std > 0.05 ? de(p.kl1 / std) : "–") })),
       el("div", { class: "aktionen" },
-        el("button", { type: "button", class: "knopf haupt", onclick: () => dlgWiegen(p), text: "Wiegen" }),
-        el("button", { type: "button", class: "knopf", disabled: p.status === "feierabend" || p.status === "fehlt", onclick: () => (istHeute ? einzel(p.nr, pause ? "weiter" : "pause", p.satz) : dlgMehr(p, pause ? "weiter" : "pause")), text: pause ? "Weiter" : "Pause" }),
-        el("button", { type: "button", class: "knopf", onclick: () => dlgMehr(p, endeFehlt ? "ende" : null), text: "Mehr" }))));
+        el("button", { type: "button", class: "knopf haupt", onclick: () => dlgWiegen(p), text: T("wiegen") }),
+        el("button", { type: "button", class: "knopf", disabled: p.status === "feierabend" || p.status === "fehlt", onclick: () => (istHeute ? einzel(p.nr, pause ? "weiter" : "pause", p.satz) : dlgMehr(p, pause ? "weiter" : "pause")), text: pause ? T("art_weiter") : T("art_pause") }),
+        el("button", { type: "button", class: "knopf", onclick: () => dlgMehr(p, endeFehlt ? "ende" : null), text: T("mehr") }))));
   }
 
   const ts = $("t-saetze"); ts.replaceChildren();
@@ -411,30 +633,30 @@ function zeichnen() {
   for (const e of zeigen) {
     const w = e.art === "wiegung";
     te.append(el("tr", { class: e.storniert ? "storno" : "" },
-      el("td", { text: e.zeit.slice(0, 5) }), el("td", { text: e.helfer }), el("td", { text: ARTEN[e.art] || e.art }), el("td", { text: satzName(e.satz) }),
+      el("td", { text: e.zeit.slice(0, 5) }), el("td", { text: e.helfer }), el("td", { text: artText(e.art) }), el("td", { text: satzName(e.satz) }),
       el("td", { class: "r", text: w ? e.kisten : "" }), el("td", { class: "r", text: w ? de(e.klasse1_kg || 0) : "" }), el("td", { class: "r", text: w ? de(e.kompost_kg || 0) : "" }),
-      el("td", {}, e.storniert ? el("span", { class: "chip", text: "storniert" })
-        : el("button", { type: "button", class: "knopf klein rot", onclick: () => dlgStorno(e), text: "Storno" }))));
+      el("td", {}, e.storniert ? el("span", { class: "chip", text: T("storniert") })
+        : el("button", { type: "button", class: "knopf klein rot", onclick: () => dlgStorno(e), text: T("storno") }))));
   }
-  if (!alle.length) te.append(el("tr", {}, el("td", { colspan: 8, text: "Noch keine Einträge an diesem Tag." })));
+  if (!alle.length) te.append(el("tr", {}, el("td", { colspan: 8, text: T("keine_eintraege") })));
   const mehr = $("b-alle-eintraege");
   mehr.hidden = alle.length <= 30;
-  mehr.textContent = S.alleZeigen ? "Nur die letzten 30 zeigen" : "Alle " + alle.length + " Einträge zeigen";
+  mehr.textContent = S.alleZeigen ? T("nur_30") : T("alle_n", alle.length);
 
   const n = offenAnzahl(), st = $("stand"), bs = $("b-senden");
   const alt = S.offenSeit && (Date.now() - Date.parse(S.offenSeit)) > ERINNERN_NACH_STD * 3600000;
-  if (S.fatal) { st.textContent = "Fehler"; st.className = "offen"; }
-  else if (!S.bereit) { st.textContent = "lädt …"; st.className = ""; }
-  else if (n) { st.textContent = n + " ungesendet"; st.className = "offen"; }
-  else { st.textContent = "alles gesendet"; st.className = "ok"; }
-  bs.textContent = n ? "Senden (" + n + " neu)" : "Senden";
+  if (S.fatal) { st.textContent = T("fehler"); st.className = "offen"; }
+  else if (!S.bereit) { st.textContent = T("laedt"); st.className = ""; }
+  else if (n) { st.textContent = T("ungesendet", n); st.className = "offen"; }
+  else { st.textContent = T("alles_gesendet"); st.className = "ok"; }
+  bs.textContent = n ? T("senden_n", n) : T("senden");
   bs.className = "knopf gross" + (n && alt ? " dringend" : "");
   for (const id of ["b-anmelden", "b-senden", "b-allepause", "b-alleweiter", "b-alleende", "b-neu", "b-alles-senden"]) $(id).disabled = !S.bereit;
 
   stammZeichnen();
-  $("info").textContent = "Gerät " + (S.geraet || "–") + " · App " + APP_VERSION + " · " + S.saetze.length + " Sätze, Stand " + (S.saetzeStand || "–")
-    + (S.letzterVersand ? " · zuletzt gesendet " + new Date(S.letzterVersand).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "")
-    + (S.dauerhaft === true ? " · Speicher geschützt" : "");
+  $("info").textContent = T("info", S.geraet || "–", APP_VERSION, S.saetze.length, S.saetzeStand || "–")
+    + (S.letzterVersand ? T("zuletzt", new Date(S.letzterVersand).toLocaleString(T("locale"), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })) : "")
+    + (S.dauerhaft === true ? T("geschuetzt") : "");
 }
 
 function hinweiseZeichnen(istHeute) {
@@ -442,10 +664,10 @@ function hinweiseZeichnen(istHeute) {
   const banner = (art, text, knopfText, aktion) => box.append(el("div", { class: "banner " + art, role: art === "rot" ? "alert" : null },
     el("span", { text }), knopfText ? el("button", { type: "button", class: "knopf klein", onclick: aktion, text: knopfText }) : null));
   if (S.fatal) banner("rot", S.fatal);
-  if (S.vorschau) banner("ruhig", "Vorschau mit Testdaten. Hier kannst du alles ausprobieren. Das Senden per WhatsApp funktioniert erst auf der echten Adresse.");
-  if (S.saetzeFehlen) banner("rot", "Die Liste der Sätze (Feld und Sorte) fehlt noch. Die Seite einmal mit Internet öffnen.");
-  if (!istHeute) banner("", "Du trägst für " + datumKurz(S.datum) + " nach. Die Uhrzeit musst du selbst eintragen.", "Zurück zu heute", () => tagWechseln(heute()));
-  for (const f of S.fehltEnde) if (f.datum !== S.datum) banner("", "Am " + datumKurz(f.datum) + " fehlt der Feierabend bei Nr. " + f.nrs.join(", ") + ".", "Tag öffnen", () => tagWechseln(f.datum));
+  if (S.vorschau) banner("ruhig", T("vorschau"));
+  if (S.saetzeFehlen) banner("rot", T("saetze_fehlen"));
+  if (!istHeute) banner("", T("nachtrag", datumKurz(S.datum)), T("zurueck_heute"), () => tagWechseln(heute()));
+  for (const f of S.fehltEnde) if (f.datum !== S.datum) banner("", T("ende_fehlt_tag", datumKurz(f.datum), f.nrs.join(", ")), T("tag_oeffnen"), () => tagWechseln(f.datum));
 }
 
 function toast(text, ids) {
@@ -454,7 +676,7 @@ function toast(text, ids) {
   $("toast-undo").hidden = !ids || !ids.length;
   $("toast-undo").onclick = async () => {
     $("toast").hidden = true;
-    try { await stornieren(ids); } catch (e) { toast("Rückgängig hat nicht geklappt. Bitte den Eintrag unten stornieren."); }
+    try { await stornieren(ids); } catch (e) { toast(T("rueck_fehler")); }
   };
   clearTimeout(toast.t); toast.t = setTimeout(() => { $("toast").hidden = true; }, 7000);
 }
@@ -520,16 +742,16 @@ async function stornieren(ids) {
   await buchen(liste);
 }
 function fehlerText(e) {
-  if (e && e.name === "QuotaExceededError") return "Der Speicher des Handys ist voll. Bitte Platz schaffen und nochmal versuchen.";
-  return "Speichern hat nicht geklappt (" + (e && (e.message || e.name) || "Fehler") + "). Bitte nochmal versuchen.";
+  if (e && e.name === "QuotaExceededError") return T("speicher_voll");
+  return T("speichern_fehler", e && (e.message || e.name) || T("fehler"));
 }
 let einzelLaeuft = false;
 async function einzel(nr, art, satz) {
   if (einzelLaeuft) return;                  // Doppeltippen darf nicht doppelt buchen
   einzelLaeuft = true;
   try {
-    const ids = await speichern([{ zeit: zeitMitSekunden(jetztZeit()), helfer: nr, art, satz }]);
-    toast("Nr. " + nr + ": " + ARTEN[art] + " gespeichert", ids);
+    const ids = await speichern([{ zeit: zeitMitSekunden(jetztZeit(), nr), helfer: nr, art, satz }]);
+    toast(T("gespeichert", nr, artText(art)), ids);
   } catch (e) { toast(fehlerText(e)); }
   einzelLaeuft = false;
 }
@@ -542,7 +764,7 @@ function formular(titel) { const f = $("dlg-form"); f.onsubmit = (ev) => ev.prev
 function fuss(f, text, aktion, art = "haupt") {
   const m = el("p", { class: "meldung", role: "alert" });
   const ok = el("button", { type: "submit", class: "knopf " + art, text });
-  f.append(m, el("div", { class: "fuss" }, el("button", { type: "button", class: "knopf", onclick: dlgZu, text: "Abbrechen" }), ok));
+  f.append(m, el("div", { class: "fuss" }, el("button", { type: "button", class: "knopf", onclick: dlgZu, text: T("abbrechen") }), ok));
   let laeuft = false;
   f.onsubmit = async (ev) => {
     ev.preventDefault();
@@ -559,12 +781,12 @@ function fuss(f, text, aktion, art = "haupt") {
 function zeitFeld(f) {
   const istHeute = S.datum === heute();
   const i = el("input", { type: "time", id: "f-zeit", value: istHeute ? jetztZeit() : "", required: true });
-  f.append(el("label", { class: "feld", for: "f-zeit" }, el("span", { text: istHeute ? "Uhrzeit (jetzt; bei Nachtrag ändern)" : "Uhrzeit am " + datumKurz(S.datum) }), i));
+  f.append(el("label", { class: "feld", for: "f-zeit" }, el("span", { text: istHeute ? T("zeit_jetzt") : T("zeit_am", datumKurz(S.datum)) }), i));
   return i;
 }
 function zeitPruefen(wert) {
-  if (!/^\d{2}:\d{2}$/.test(wert)) return "Bitte die Uhrzeit angeben.";
-  if (S.datum === heute() && minuten(wert) > minuten(jetztZeit()) + 1) return "Die Uhrzeit liegt in der Zukunft.";
+  if (!/^\d{2}:\d{2}$/.test(wert)) return T("zeit_fehlt");
+  if (S.datum === heute() && minuten(wert) > minuten(jetztZeit()) + 1) return T("zeit_zukunft");
   return "";
 }
 function wahl(f, titel, optionen, vorwahl, klasse = "") {
@@ -580,12 +802,12 @@ function wahl(f, titel, optionen, vorwahl, klasse = "") {
 // eingeklappt: Ist der Satz des Helfers bekannt, steht er nur als Zeile da; „ändern“ zeigt die ganze Liste.
 function satzWahl(f, vorwahl, eingeklappt) {
   const bekannt = S.saetze.some((s) => s.id === vorwahl);
-  const w = wahl(f, "Satz (Feld · Sorte)", S.saetze.map((s) => [s.id, s.schlag + " · " + s.sorte]), bekannt ? vorwahl : null);
-  if (!S.saetze.length) w.box.append(el("p", { class: "leer", text: "Keine Sätze vorhanden. Die Seite einmal mit Internet öffnen." }));
+  const w = wahl(f, T("satz_feld"), S.saetze.map((s) => [s.id, s.schlag + " · " + s.sorte]), bekannt ? vorwahl : null);
+  if (!S.saetze.length) w.box.append(el("p", { class: "leer", text: T("keine_saetze") }));
   if (eingeklappt && bekannt) {
     w.box.hidden = true;
     const zeile = el("div", { class: "satzzeile" }, el("b", { text: satzName(vorwahl) }),
-      el("button", { type: "button", class: "knopf klein", onclick: () => { zeile.hidden = true; w.box.hidden = false; }, text: "ändern" }));
+      el("button", { type: "button", class: "knopf klein", onclick: () => { zeile.hidden = true; w.box.hidden = false; }, text: T("aendern") }));
     w.box.before(zeile);
   }
   return w.wert;
@@ -593,10 +815,10 @@ function satzWahl(f, vorwahl, eingeklappt) {
 
 function dlgAnmelden() {
   const { pro } = tagAuswerten();
-  const f = formular("Helfer anmelden");
+  const f = formular(T("anmelden"));
   const satz = satzWahl(f, null);
   const gewaehlt = new Set();
-  const box = el("div", { class: "wahl nummern", role: "group", "aria-label": "Helfer" });
+  const box = el("div", { class: "wahl nummern", role: "group", "aria-label": T("aria_helfer") });
   const liste = S.helfer.filter((x) => x.aktiv !== false).sort((a, b) => a.nr - b.nr);
   for (const x of liste) {
     const st = pro.get(x.nr) && pro.get(x.nr).status;
@@ -605,77 +827,77 @@ function dlgAnmelden() {
       onclick: () => { if (gewaehlt.has(x.nr)) gewaehlt.delete(x.nr); else gewaehlt.add(x.nr); b.setAttribute("aria-pressed", String(gewaehlt.has(x.nr))); } });
     box.append(b);
   }
-  if (!liste.length) box.append(el("p", { class: "leer", text: "Noch keine Helfer angelegt. Unten bei „Einstellungen und Erntehelfer“ anlegen." }));
-  f.append(el("div", { class: "feld" }, el("span", { text: "Helfer (• = schon angemeldet, wechselt dann den Satz)" }), box));
+  if (!liste.length) box.append(el("p", { class: "leer", text: T("keine_helfer") }));
+  f.append(el("div", { class: "feld" }, el("span", { text: T("helfer_wahl") }), box));
   const z = zeitFeld(f);
-  fuss(f, "Starten", async () => {
-    if (!satz()) return "Bitte einen Satz wählen.";
-    if (!gewaehlt.size) return "Bitte mindestens einen Helfer wählen.";
+  fuss(f, T("starten"), async () => {
+    if (!satz()) return T("satz_waehlen");
+    if (!gewaehlt.size) return T("helfer_waehlen");
     const zf = zeitPruefen(z.value); if (zf) return zf;
     const nrs = [...gewaehlt].sort((a, b) => a - b);
-    const ids = await speichern(nrs.map((nr) => ({ zeit: zeitMitSekunden(z.value), helfer: nr, art: "start", satz: satz() })));
-    toast(ids.length + " Helfer auf " + satzName(satz()) + " gestartet", ids);
+    const ids = await speichern(nrs.map((nr) => ({ zeit: zeitMitSekunden(z.value, nr), helfer: nr, art: "start", satz: satz() })));
+    toast(T("gestartet", ids.length, satzName(satz())), ids);
     return true;
   });
 }
 
 function dlgWiegen(p) {
   const nr = p.nr;
-  const f = formular("Wiegen: Nr. " + nr + (helferName(nr) ? " · " + helferName(nr) : ""));
+  const f = formular(T("wiegen_titel", nr) + (helferName(nr) ? " · " + helferName(nr) : ""));
   const satz = satzWahl(f, p.satz, true);
   const kisten = el("input", { type: "number", id: "f-kisten", min: "0", step: "1", value: "1", inputmode: "numeric" });
   const schritt = (d) => { kisten.value = Math.max(0, (parseInt(kisten.value, 10) || 0) + d); };
-  f.append(el("div", { class: "feld" }, el("span", { text: "Kisten Klasse I (je 10 × 500 g)" }),
+  f.append(el("div", { class: "feld" }, el("span", { text: T("kisten_label") }),
     el("div", { class: "stepper" },
-      el("button", { type: "button", "aria-label": "eine Kiste weniger", onclick: () => schritt(-1), text: "−" }),
+      el("button", { type: "button", "aria-label": T("kiste_weniger"), onclick: () => schritt(-1), text: "−" }),
       kisten,
-      el("button", { type: "button", "aria-label": "eine Kiste mehr", onclick: () => schritt(1), text: "+" }))));
-  const kg = el("input", { type: "text", id: "f-kg", inputmode: "decimal", placeholder: "z. B. 15,4", autocomplete: "off" });
+      el("button", { type: "button", "aria-label": T("kiste_mehr"), onclick: () => schritt(1), text: "+" }))));
+  const kg = el("input", { type: "text", id: "f-kg", inputmode: "decimal", placeholder: T("kg_ph"), autocomplete: "off" });
   const ko = el("input", { type: "text", id: "f-ko", inputmode: "decimal", placeholder: "0", autocomplete: "off" });
   f.append(el("div", { class: "zweispaltig" },
-    el("label", { class: "feld", for: "f-kg" }, el("span", { text: "Gewicht Klasse I, kg" }), kg),
-    el("label", { class: "feld", for: "f-ko" }, el("span", { text: "Kompost, kg" }), ko)));
+    el("label", { class: "feld", for: "f-kg" }, el("span", { text: T("gewicht_label") }), kg),
+    el("label", { class: "feld", for: "f-ko" }, el("span", { text: T("kompost_label") }), ko)));
   const z = zeitFeld(f);
   let bestaetigt = "";
-  fuss(f, "Speichern", async (m) => {
-    if (!satz()) return "Bitte den Satz wählen.";
+  fuss(f, T("speichern"), async (m) => {
+    if (!satz()) return T("satz_waehlen");
     const kText = String(kisten.value).trim();
     const k = kText === "" ? 0 : Number(kText), g = rund2(zahl(kg.value)), c = rund2(zahl(ko.value));
-    if (!Number.isInteger(k) || k < 0) return "Kisten: bitte eine ganze Zahl.";
-    if (isNaN(g) || isNaN(c)) return "Gewicht bitte als Zahl eintragen, z. B. 15,4.";
-    if (k > 0 && g <= 0) return "Bitte das Gewicht der " + k + " Kiste(n) eintragen.";
-    if (k === 0 && g > 0) return "Gewicht ohne Kisten: bitte die Kistenzahl eintragen.";
-    if (k === 0 && c <= 0) return "Bitte Kisten oder Kompost eintragen.";
+    if (!Number.isInteger(k) || k < 0) return T("kisten_ganz");
+    if (isNaN(g) || isNaN(c)) return T("gewicht_zahl");
+    if (k > 0 && g <= 0) return T("gewicht_fehlt", k);
+    if (k === 0 && g > 0) return T("ohne_kisten");
+    if (k === 0 && c <= 0) return T("nichts_eingetragen");
     const zf = zeitPruefen(z.value); if (zf) return zf;
     const auffaellig = [];
-    if (k && (g / k < KISTE_MIN || g / k > KISTE_MAX)) auffaellig.push(de(g / k, 2) + " kg je Kiste");
-    if (k > KISTEN_VIEL) auffaellig.push(k + " Kisten auf einmal");
-    if (c > KOMPOST_VIEL) auffaellig.push(de(c) + " kg Kompost");
+    if (k && (g / k < KISTE_MIN || g / k > KISTE_MAX)) auffaellig.push(T("je_kiste", de(g / k, 2)));
+    if (k > KISTEN_VIEL) auffaellig.push(T("auf_einmal", k));
+    if (c > KOMPOST_VIEL) auffaellig.push(T("kg_kompost", de(c)));
     const schluessel = [k, g, c].join("|");
     if (auffaellig.length && bestaetigt !== schluessel) {
       bestaetigt = schluessel; m.className = "meldung warn";
-      return "Ungewöhnlich: " + auffaellig.join(", ") + ". Stimmt das? Dann nochmal „Speichern“.";
+      return T("ungewoehnlich", auffaellig.join(", "));
     }
-    const ids = await speichern([{ zeit: zeitMitSekunden(z.value), helfer: nr, art: "wiegung", satz: satz(), kisten: k, klasse1_kg: g, kompost_kg: c }]);
-    toast("Nr. " + nr + ": " + k + " Kisten, " + de(g) + " kg" + (c ? ", Kompost " + de(c) + " kg" : ""), ids);
+    const ids = await speichern([{ zeit: zeitMitSekunden(z.value, nr), helfer: nr, art: "wiegung", satz: satz(), kisten: k, klasse1_kg: g, kompost_kg: c }]);
+    toast(T("gewogen", nr, k, de(g), c ? de(c) : ""), ids);
     return true;
   });
   setTimeout(() => kg.focus(), 50);
 }
 
 function dlgMehr(p, vorwahl) {
-  const f = formular("Nr. " + p.nr + (helferName(p.nr) ? " · " + helferName(p.nr) : ""));
+  const f = formular(T("nr", p.nr) + (helferName(p.nr) ? " · " + helferName(p.nr) : ""));
   const laeuft = p.status === "arbeitet" || p.status === "pause";
-  const art = wahl(f, "Was ist passiert?", [["start", laeuft ? "Satz wechseln" : "Wieder starten"], ["pause", "Pause"], ["weiter", "Weiter nach Pause"], ["ende", "Feierabend"]], vorwahl);
-  f.append(el("p", { class: "klein-text", text: "Vor einem Satzwechsel bitte erst wiegen, sonst zählen die Kisten zum neuen Satz." }));
+  const art = wahl(f, T("was_passiert"), [["start", laeuft ? T("satz_wechseln") : T("wieder_starten")], ["pause", T("art_pause")], ["weiter", T("weiter_nach_pause")], ["ende", T("art_ende")]], vorwahl);
+  f.append(el("p", { class: "klein-text", text: T("hinweis_wechsel") }));
   const satz = satzWahl(f, p.satz);
   const z = zeitFeld(f);
-  fuss(f, "Speichern", async () => {
-    if (!art.wert()) return "Bitte auswählen, was passiert ist.";
-    if (!satz()) return "Bitte den Satz wählen.";
+  fuss(f, T("speichern"), async () => {
+    if (!art.wert()) return T("was_waehlen");
+    if (!satz()) return T("satz_waehlen");
     const zf = zeitPruefen(z.value); if (zf) return zf;
-    const ids = await speichern([{ zeit: zeitMitSekunden(z.value), helfer: p.nr, art: art.wert(), satz: satz() }]);
-    toast("Nr. " + p.nr + ": " + ARTEN[art.wert()] + " gespeichert", ids);
+    const ids = await speichern([{ zeit: zeitMitSekunden(z.value, p.nr), helfer: p.nr, art: art.wert(), satz: satz() }]);
+    toast(T("gespeichert", p.nr, artText(art.wert())), ids);
     return true;
   });
 }
@@ -683,23 +905,23 @@ function dlgMehr(p, vorwahl) {
 function dlgSammel(art) {
   const { pro } = tagAuswerten();
   const betroffen = [...pro.values()].filter((p) => (art === "pause" ? p.status === "arbeitet" : art === "weiter" ? p.status === "pause" : p.status === "arbeitet" || p.status === "pause")).sort((a, b) => a.nr - b.nr);
-  if (!betroffen.length) { toast(art === "weiter" ? "Niemand ist in der Pause." : "Niemand ist angemeldet."); return; }
-  const f = formular("Alle: " + ARTEN[art]);
-  f.append(el("p", { text: betroffen.length + " Helfer: Nr. " + betroffen.map((p) => p.nr).join(", ") }));
+  if (!betroffen.length) { toast(art === "weiter" ? T("niemand_pause") : T("niemand")); return; }
+  const f = formular(T("alle_titel", artText(art)));
+  f.append(el("p", { text: T("betroffen", betroffen.length, betroffen.map((p) => p.nr).join(", ")) }));
   const z = zeitFeld(f);
-  fuss(f, "Für alle speichern", async () => {
+  fuss(f, T("fuer_alle"), async () => {
     const zf = zeitPruefen(z.value); if (zf) return zf;
-    const ids = await speichern(betroffen.map((p) => ({ zeit: zeitMitSekunden(z.value), helfer: p.nr, art, satz: p.satz })));
-    toast(betroffen.length + " × " + ARTEN[art] + " gespeichert", ids);
+    const ids = await speichern(betroffen.map((p) => ({ zeit: zeitMitSekunden(z.value, p.nr), helfer: p.nr, art, satz: p.satz })));
+    toast(T("sammel_gespeichert", betroffen.length, artText(art)), ids);
     return true;
   }, art === "ende" ? "rot" : "haupt");
 }
 
 function dlgStorno(e) {
-  const f = formular("Eintrag stornieren?");
-  f.append(el("p", { text: e.zeit.slice(0, 5) + " · Nr. " + e.helfer + " · " + (ARTEN[e.art] || e.art) + (e.art === "wiegung" ? " · " + e.kisten + " Kisten, " + de(e.klasse1_kg || 0) + " kg, Kompost " + de(e.kompost_kg || 0) + " kg" : "") }),
-    el("p", { class: "klein-text", text: "Der Eintrag bleibt sichtbar, zählt aber nicht mehr. Den richtigen Wert danach neu eintragen." }));
-  fuss(f, "Stornieren", async () => { await stornieren([e.id]); return true; }, "rot");
+  const f = formular(T("storno_titel"));
+  f.append(el("p", { text: e.zeit.slice(0, 5) + " · " + T("nr", e.helfer) + " · " + artText(e.art) + (e.art === "wiegung" ? " · " + T("storno_wiegung", e.kisten, de(e.klasse1_kg || 0), de(e.kompost_kg || 0)) : "") }),
+    el("p", { class: "klein-text", text: T("storno_hinweis") }));
+  fuss(f, T("stornieren"), async () => { await stornieren([e.id]); return true; }, "rot");
 }
 
 /* ---------- Senden: Datei mit allen Einträgen der betroffenen Tage, über das Teilen-Menü (WhatsApp) ---------- */
@@ -734,45 +956,45 @@ async function alsGesendetMerken(paket) {
 }
 
 function dlgSenden(alles) {
-  const f = formular(alles ? "Ganze Saison senden" : "Senden");
-  const lage = el("p", { text: "Bereite die Datei vor …" });
+  const f = formular(alles ? T("saison_titel") : T("senden"));
+  const lage = el("p", { text: T("vorbereiten") });
   const warnung = el("p", { class: "meldung warn" });
-  const haupt = el("button", { type: "button", class: "knopf haupt gross", disabled: true, text: "Jetzt senden" });
+  const haupt = el("button", { type: "button", class: "knopf haupt gross", disabled: true, text: T("jetzt_senden") });
   const anderer = el("button", { type: "button", class: "knopf klein", hidden: true });
   const m = el("p", { class: "meldung", role: "alert" });
   const ersatz = el("div", { hidden: true, style: "display:grid;gap:8px" });
   f.append(lage, warnung, el("div", { class: "leiste" }, haupt), anderer, m, ersatz,
-    el("div", { class: "fuss" }, el("button", { type: "button", class: "knopf", onclick: dlgZu, text: "Schließen" })));
+    el("div", { class: "fuss" }, el("button", { type: "button", class: "knopf", onclick: dlgZu, text: T("schliessen") })));
   let paket = null;
 
   const fertig = async () => {
     try { await alsGesendetMerken(paket); } catch (e) { m.textContent = fehlerText(e); return; }
     dlgZu();
-    toast("Gesendet: " + paket.anzahl + " Einträge. Bitte in WhatsApp nachsehen, ob die Datei verschickt ist.");
+    toast(T("gesendet", paket.anzahl));
   };
   const ersatzZeigen = () => {
     if (!paket || !ersatz.hidden) return;
     ersatz.hidden = false;
-    const roh = el("textarea", { class: "roh", readonly: true, "aria-label": "Inhalt der Datei" });
+    const roh = el("textarea", { class: "roh", readonly: true, "aria-label": T("aria_inhalt") });
     roh.value = paket.text;
     const direkt = kannTeilen(paket.datei);
     ersatz.append(
-      direkt ? el("p", { class: "klein-text", text: "Ersatzweg: Datei speichern und in WhatsApp als Dokument an Julius schicken. Danach hier bestätigen." }) : null,
+      direkt ? el("p", { class: "klein-text", text: T("ersatzweg") }) : null,
       el("div", { class: "leiste" },
-        direkt ? el("button", { type: "button", class: "knopf klein", onclick: () => herunterladen(paket), text: "Datei speichern" }) : null,
-        el("button", { type: "button", class: "knopf klein", onclick: async () => { try { await navigator.clipboard.writeText(paket.text); m.className = "meldung gut"; m.textContent = "Text kopiert."; } catch (e) { roh.focus(); roh.select(); m.className = "meldung warn"; m.textContent = "Bitte den markierten Text von Hand kopieren."; } }, text: "Text kopieren" }),
-        el("button", { type: "button", class: "knopf klein haupt", onclick: fertig, text: "Ich habe die Datei geschickt" })),
+        direkt ? el("button", { type: "button", class: "knopf klein", onclick: () => herunterladen(paket), text: T("datei_speichern") }) : null,
+        el("button", { type: "button", class: "knopf klein", onclick: async () => { try { await navigator.clipboard.writeText(paket.text); m.className = "meldung gut"; m.textContent = T("kopiert"); } catch (e) { roh.focus(); roh.select(); m.className = "meldung warn"; m.textContent = T("von_hand"); } }, text: T("text_kopieren") }),
+        el("button", { type: "button", class: "knopf klein haupt", onclick: fertig, text: T("geschickt") })),
       roh);
   };
   const vorbereiten = async (tage, ganz) => {
     haupt.disabled = true; paket = null; m.textContent = ""; warnung.textContent = ""; ersatz.hidden = true; ersatz.replaceChildren();
     try { paket = await paketBauen(tage, ganz); } catch (e) { lage.textContent = fehlerText(e); return; }
-    if (!paket.anzahl) { lage.textContent = "Es gibt nichts zu senden."; return; }
-    lage.textContent = paket.anzahl + " Einträge, " + (paket.tage.length === 1 ? "Tag: " : paket.tage.length + " Tage: ") + paket.tage.map(datumKurz).join(", ")
-      + (kannTeilen(paket.datei) ? " Im nächsten Schritt WhatsApp und Julius wählen." : " Dieses Gerät kann nicht direkt teilen: Datei speichern, in WhatsApp als Dokument an Julius schicken, danach unten bestätigen.");
+    if (!paket.anzahl) { lage.textContent = T("nichts_senden"); return; }
+    lage.textContent = T("lage", paket.anzahl, paket.tage.map(datumKurz))
+      + (kannTeilen(paket.datei) ? " " + T("teilen_ja") : " " + T("teilen_nein"));
     const ohneEnde = paket.tage.includes(S.datum) ? [...tagAuswerten().pro.values()].filter((p) => p.status === "arbeitet" || p.status === "pause").map((p) => p.nr).sort((a, b) => a - b) : [];
-    if (ohneEnde.length) warnung.textContent = "Noch ohne Feierabend: Nr. " + ohneEnde.join(", ") + ". Zwischendurch senden ist in Ordnung; nach dem Feierabend bitte nochmal senden.";
-    haupt.textContent = kannTeilen(paket.datei) ? "Jetzt senden" : "Datei speichern";
+    if (ohneEnde.length) warnung.textContent = T("ohne_ende", ohneEnde.join(", "));
+    haupt.textContent = kannTeilen(paket.datei) ? T("jetzt_senden") : T("datei_speichern");
     haupt.disabled = false;
     if (!kannTeilen(paket.datei)) ersatzZeigen();
   };
@@ -781,9 +1003,9 @@ function dlgSenden(alles) {
     if (!paket) return;
     m.className = "meldung"; m.textContent = "";
     if (!kannTeilen(paket.datei)) { herunterladen(paket); return; }
-    navigator.share({ files: [paket.datei], title: "Ernte " + paket.tage.map(datumKurz).join(", ") }).then(fertig, (e) => {
-      if (e && e.name === "AbortError") { m.className = "meldung warn"; m.textContent = "Abgebrochen. Es wurde nichts verschickt."; }
-      else { m.textContent = "Das Teilen hat nicht geklappt. Bitte den Weg unten benutzen."; ersatzZeigen(); }
+    navigator.share({ files: [paket.datei], title: T("share_titel", paket.tage.map(datumKurz).join(", ")) }).then(fertig, (e) => {
+      if (e && e.name === "AbortError") { m.className = "meldung warn"; m.textContent = T("abgebrochen"); }
+      else { m.textContent = T("teilen_fehler"); ersatzZeigen(); }
     });
   };
 
@@ -791,11 +1013,11 @@ function dlgSenden(alles) {
   if (alles) vorbereiten([], true);
   else if (offeneTage.length) {
     vorbereiten(offeneTage, false);
-    anderer.hidden = false; anderer.textContent = "Stattdessen nur " + datumKurz(S.datum) + " komplett senden";
+    anderer.hidden = false; anderer.textContent = T("nur_tag", datumKurz(S.datum));
     anderer.onclick = () => { anderer.hidden = true; vorbereiten([S.datum], false); };
   } else {
-    lage.textContent = "Alles ist schon gesendet.";
-    anderer.hidden = false; anderer.textContent = datumKurz(S.datum) + " nochmal komplett senden";
+    lage.textContent = T("schon_gesendet");
+    anderer.hidden = false; anderer.textContent = T("nochmal_tag", datumKurz(S.datum));
     anderer.onclick = () => { anderer.hidden = true; vorbereiten([S.datum], false); };
   }
   dlgAuf();
@@ -815,14 +1037,14 @@ function stammZeichnen() {
   if (l.contains(document.activeElement)) return;          // nicht neu aufbauen, während jemand tippt
   l.replaceChildren();
   for (const x of [...S.helfer].sort((a, b) => a.nr - b.nr)) {
-    const name = el("input", { type: "text", value: x.name || "", maxlength: "40", autocomplete: "off", "aria-label": "Name Nr. " + x.nr, id: "st-" + x.nr });
+    const name = el("input", { type: "text", value: x.name || "", maxlength: "40", autocomplete: "off", "aria-label": T("aria_name", x.nr), id: "st-" + x.nr });
     if (x.aktiv === false) name.style.opacity = ".5";
     name.addEventListener("change", () => helferSpeichern(S.helfer.map((y) => (y.nr === x.nr ? Object.assign({}, y, { name: name.value.trim() }) : y))));
-    l.append(el("div", { class: "zeile" }, el("b", { class: "num", text: "Nr. " + x.nr }), name,
-      el("button", { type: "button", class: "knopf klein", onclick: () => helferSpeichern(S.helfer.map((y) => (y.nr === x.nr ? Object.assign({}, y, { aktiv: y.aktiv === false }) : y))), text: x.aktiv === false ? "Wieder anmelden" : "Abmelden" })));
+    l.append(el("div", { class: "zeile" }, el("b", { class: "num", text: T("nr", x.nr) }), name,
+      el("button", { type: "button", class: "knopf klein", onclick: () => helferSpeichern(S.helfer.map((y) => (y.nr === x.nr ? Object.assign({}, y, { aktiv: y.aktiv === false }) : y))), text: x.aktiv === false ? T("wieder_anmelden") : T("abmelden") })));
   }
   const naechste = S.helfer.reduce((a, x) => Math.max(a, x.nr), 0) + 1;
-  if (document.activeElement !== $("neu-nr")) $("neu-nr").placeholder = "Nr. " + naechste;
+  if (document.activeElement !== $("neu-nr")) $("neu-nr").placeholder = T("nr", naechste);
 }
 async function helferSpeichern(liste) {
   try { await S.sp.schreiben([], { helfer: liste }); S.helfer = liste; $("stamm-meldung").textContent = ""; }
@@ -833,8 +1055,8 @@ function helferNeu() {
   const m = $("stamm-meldung");
   const roh = $("neu-nr").value.trim(), name = $("neu-name").value.trim();
   const nr = roh === "" ? S.helfer.reduce((a, x) => Math.max(a, x.nr), 0) + 1 : Number(roh);
-  if (!Number.isInteger(nr) || nr < 1 || nr > 9999) { m.textContent = "Nummer: bitte eine ganze Zahl von 1 bis 9999."; return; }
-  if (S.helfer.some((x) => x.nr === nr)) { m.textContent = "Nr. " + nr + " gibt es schon."; return; }
+  if (!Number.isInteger(nr) || nr < 1 || nr > 9999) { m.textContent = T("nr_bereich"); return; }
+  if (S.helfer.some((x) => x.nr === nr)) { m.textContent = T("nr_gibts", nr); return; }
   $("neu-nr").value = ""; $("neu-name").value = "";
   helferSpeichern([...S.helfer, { nr, name, aktiv: true }]);
 }
@@ -874,19 +1096,23 @@ async function vorschauFuellen() {
 
 async function aktualisieren() {
   const b = $("b-update");
-  b.disabled = true; b.textContent = "Suche …";
+  b.disabled = true; b.textContent = T("suche");
   try {
     const c = await caches.open(CACHE);
     await Promise.all(DATEIEN.map(async (u) => { const r = await fetch(u, { cache: "reload" }); if (!r.ok || r.redirected) throw new Error(u); await c.put(u, r); }));
     location.reload();
-  } catch (e) { b.disabled = false; b.textContent = "Kein Internet. Später nochmal versuchen."; }
+  } catch (e) { b.disabled = false; b.textContent = T("kein_internet"); }
 }
 
 function fatal(text) { S.fatal = text; S.bereit = false; zeichnen(); }
 
 async function start() {
+  const gemerkt = spracheLaden();
+  if (gemerkt) SPRACHE = gemerkt;
+  statischUebersetzen();
   $("datum").value = S.datum; $("datum").max = S.datum;
   zeichnen();
+  if (!gemerkt) await spracheErfragen();
   const kfg = await saetzeHolen();
   S.vorschau = kfg.vorschau === true;
   S.saetzeFehlen = !!kfg.fehlt;
@@ -896,12 +1122,12 @@ async function start() {
   S.sp = idbSpeicher(S.vorschau ? "ernte-vorschau" : "ernte");
   try { await S.sp.oeffnen(); await S.sp.kvLesen(["geraet"]); }
   catch (e) {
-    if (!S.vorschau) { fatal("Dieses Handy kann hier nichts speichern (privater Modus oder Speicher gesperrt). Bitte die Seite im normalen Browser öffnen. Es wurde nichts erfasst."); return; }
+    if (!S.vorschau) { fatal(T("kein_speicher")); return; }
     S.sp = fluechtigerSpeicher();
   }
   let kv;
   try { kv = await S.sp.kvLesen(["geraet", "helfer"]); await merkerLesen(); }
-  catch (e) { fatal("Die gespeicherten Daten lassen sich nicht lesen (" + (e && e.message || "Fehler") + "). Seite neu öffnen; wenn es bleibt, Julius Bescheid sagen."); return; }
+  catch (e) { fatal(T("nicht_lesbar", e && e.message || T("fehler"))); return; }
   if (!kv.geraet) { kv.geraet = S.vorschau ? "vorsch" : zufall(6); await S.sp.schreiben([], { geraet: kv.geraet }); }
   S.geraet = kv.geraet;
   S.helfer = Array.isArray(kv.helfer) ? kv.helfer.filter((x) => x && Number.isInteger(x.nr)) : [];
@@ -940,9 +1166,13 @@ $("b-alleende").addEventListener("click", () => dlgSammel("ende"));
 $("b-alle-eintraege").addEventListener("click", () => { S.alleZeigen = !S.alleZeigen; zeichnen(); });
 $("b-neu").addEventListener("click", helferNeu);
 $("b-update").addEventListener("click", aktualisieren);
+for (const b of document.querySelectorAll("[data-sprache]")) b.addEventListener("click", () => spracheSetzen(b.dataset.sprache));
+// Die Sprachfrage beim ersten Öffnen lässt sich nicht wegdrücken (Zurück-Taste/Esc), sonst bliebe die Seite stehen.
+dlg.addEventListener("cancel", (ev) => { if (S.spracheFrage) ev.preventDefault(); });
+dlg.addEventListener("close", () => { if (S.spracheFrage) dlgAuf(); });
 document.addEventListener("visibilitychange", takt);
 setInterval(takt, 30000);
-start().catch((e) => fatal("Die Seite konnte nicht starten (" + (e && e.message || "Fehler") + "). Bitte neu öffnen."));
+start().catch((e) => fatal(T("start_fehler", e && e.message || T("fehler"))));
 </script>
 </body>
 </html>
