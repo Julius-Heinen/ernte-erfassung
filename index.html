@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Erdbeerernte erfassen</title>
+<meta name="theme-color" content="#111a14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ernte">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<style>
+/* Hell mit hohem Kontrast: wird draußen in der Sonne auf dem Handy bedient. Keine fremden Schriften, damit alles ohne Netz läuft.
+   Aufbau: Kopf mit Datum → Hinweise → Tagessumme → große Knöpfe → Karte je Helfer → Je Satz → Einträge → Einstellungen. */
+:root {
+  --boden: #f3f5f1;
+  --flaeche: #ffffff;
+  --tinte: #111a14;
+  --leise: #4d5a50;
+  --linie: #cfd6cd;
+  --blatt: #1d6a38;
+  --blatt-hell: #e3f0e6;
+  --beere: #b8233a;
+  --kompost: #765424;
+  --warn: #9a5b00;
+  --warn-hell: #fff1d6;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--boden); color: var(--tinte); font-family: var(--font); font-size: 17px; line-height: 1.4; }
+body { padding: 0 0 90px; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--blatt); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: .04em; color: var(--leise); }
+[hidden] { display: none !important; }
+
+header { position: sticky; top: 0; z-index: 5; background: var(--tinte); color: #fff; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+header h1 { font-size: 1.2rem; flex: 1 1 auto; }
+header label { display: flex; gap: 6px; align-items: center; font-size: .9rem; }
+header input[type=date] { background: #fff; color: var(--tinte); border: 0; border-radius: 6px; padding: 6px 8px; }
+#stand { font-size: .85rem; padding: 3px 10px; border-radius: 99px; background: #3a463d; white-space: nowrap; }
+#stand.ok { background: var(--blatt); }
+#stand.offen { background: var(--warn); }
+
+main { display: grid; gap: 18px; padding: 14px 16px; max-width: 1100px; margin: 0 auto; }
+section { display: grid; gap: 10px; }
+.banner { background: var(--warn-hell); border-left: 6px solid var(--warn); padding: 10px 12px; border-radius: 6px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.banner.rot { background: #fde8ea; border-left-color: var(--beere); }
+.banner.ruhig { background: var(--blatt-hell); border-left-color: var(--blatt); }
+.banner span { flex: 1 1 220px; }
+
+.summe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.summe div { background: var(--flaeche); border: 1px solid var(--linie); border-radius: 10px; padding: 8px 10px; }
+.summe b { display: block; font-size: 1.5rem; }
+.summe span { font-size: .8rem; color: var(--leise); }
+@media (max-width: 480px) { .summe { grid-template-columns: repeat(2, 1fr); } }
+
+.leiste { display: flex; flex-wrap: wrap; gap: 8px; }
+.knopf { border: 2px solid var(--tinte); background: var(--flaeche); border-radius: 10px; padding: 12px 16px; font-weight: 700; min-height: 52px; }
+.knopf.haupt { background: var(--blatt); border-color: var(--blatt); color: #fff; }
+.knopf.rot { border-color: var(--beere); color: var(--beere); }
+.knopf.dringend { background: var(--warn); border-color: var(--warn); color: #fff; }
+.knopf:disabled { opacity: .4; cursor: not-allowed; }
+.knopf.klein { padding: 6px 12px; min-height: 40px; font-size: .9rem; }
+.leiste .gross { flex: 1 1 160px; font-size: 1.1rem; min-height: 60px; }
+
+.karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.karte { background: var(--flaeche); border: 1px solid var(--linie); border-left: 8px solid var(--linie); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; }
+.karte.arbeitet { border-left-color: var(--blatt); }
+.karte.pause { border-left-color: var(--warn); }
+.karte.feierabend { border-left-color: var(--leise); }
+.karte.fehlt { border-left-color: var(--beere); }
+.karte .kopf { display: flex; gap: 10px; align-items: baseline; }
+.karte .nr { font-size: 1.8rem; font-weight: 700; min-width: 2.2ch; }
+.karte .name { flex: 1; font-weight: 700; overflow-wrap: anywhere; }
+.chip { font-size: .8rem; padding: 2px 9px; border-radius: 99px; background: var(--boden); border: 1px solid var(--linie); white-space: nowrap; }
+.chip.arbeitet { background: var(--blatt-hell); border-color: var(--blatt); color: var(--blatt); }
+.chip.pause { background: var(--warn-hell); border-color: var(--warn); color: var(--warn); }
+.chip.fehlt { background: #fde8ea; border-color: var(--beere); color: var(--beere); }
+.karte .zahlen { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .92rem; }
+.karte .zahlen .kl1 { color: var(--beere); font-weight: 700; }
+.karte .zahlen .ko { color: var(--kompost); }
+.karte .satz { font-size: .9rem; color: var(--leise); }
+.karte .aktionen { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; }
+.karte .aktionen .knopf { padding: 8px 6px; min-height: 48px; font-size: .95rem; }
+.leer { color: var(--leise); padding: 12px; border: 2px dashed var(--linie); border-radius: 10px; margin: 0; }
+
+.liste { background: var(--flaeche); border: 1px solid var(--linie); border-radius: 10px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--linie); white-space: nowrap; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; color: var(--leise); }
+td.r, th.r { text-align: right; }
+tr.storno td { text-decoration: line-through; color: var(--leise); }
+tr.storno td:last-child { text-decoration: none; }
+
+details { background: var(--flaeche); border: 1px solid var(--linie); border-radius: 10px; padding: 0 12px; }
+details summary { font-weight: 700; padding: 12px 0; cursor: pointer; }
+details .inhalt { display: grid; gap: 14px; padding: 4px 0 14px; }
+.stamm { display: grid; gap: 8px; }
+.stamm .zeile { display: grid; grid-template-columns: 64px 1fr auto; gap: 8px; align-items: center; }
+.stamm input[type=text], .stamm input[type=number] { width: 100%; padding: 9px; border: 1px solid var(--linie); border-radius: 6px; background: #fff; }
+.klein-text { font-size: .88rem; color: var(--leise); margin: 0; }
+
+dialog { border: 0; border-radius: 14px; padding: 0; width: min(560px, calc(100% - 20px)); max-height: calc(100% - 20px); color: var(--tinte); background: var(--flaeche); }
+dialog::backdrop { background: rgba(10, 20, 14, .55); }
+dialog form { display: grid; gap: 14px; padding: 16px; }
+dialog h3 { font-size: 1.25rem; }
+dialog p { margin: 0; }
+.feld { display: grid; gap: 4px; }
+.feld > span { font-size: .85rem; color: var(--leise); font-weight: 700; }
+.feld input { padding: 12px; font-size: 1.3rem; border: 2px solid var(--linie); border-radius: 8px; background: #fff; width: 100%; }
+.feld input:focus { border-color: var(--blatt); }
+.wahl { display: flex; flex-wrap: wrap; gap: 6px; }
+.wahl button { border: 2px solid var(--linie); background: #fff; border-radius: 8px; padding: 10px 12px; min-height: 48px; font-weight: 700; }
+.wahl button[aria-pressed="true"] { border-color: var(--blatt); background: var(--blatt); color: #fff; }
+.wahl.nummern button { min-width: 58px; font-size: 1.15rem; }
+.stepper { display: grid; grid-template-columns: 64px 1fr 64px; gap: 8px; }
+.stepper button { font-size: 1.6rem; font-weight: 700; border: 2px solid var(--tinte); background: #fff; border-radius: 8px; }
+.stepper input { text-align: center; }
+.satzzeile { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 6px 10px; border: 2px solid var(--blatt); border-radius: 8px; background: var(--blatt-hell); }
+.zweispaltig { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fuss { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.meldung { min-height: 1.2em; color: var(--beere); font-weight: 700; }
+.meldung.warn { color: var(--warn); }
+.meldung.gut { color: var(--blatt); }
+textarea.roh { width: 100%; height: 90px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .75rem; border: 1px solid var(--linie); border-radius: 6px; }
+
+#toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--tinte); color: #fff; padding: 12px 16px; border-radius: 10px; display: flex; gap: 14px; align-items: center; width: max-content; max-width: calc(100% - 32px); z-index: 20; }
+#toast button { background: transparent; color: #fff; border: 2px solid #fff; border-radius: 8px; padding: 6px 10px; font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) { .karte { transition: border-color .2s; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Erdbeerernte</h1>
+  <label for="datum">Tag <input type="date" id="datum"></label>
+  <span id="stand">lädt …</span>
+</header>
+
+<main>
+  <div id="hinweise" style="display:grid;gap:8px"></div>
+
+  <section class="summe num" aria-label="Tagessumme">
+    <div><b id="s-helfer">0</b><span>Helfer am Feld</span></div>
+    <div><b id="s-kisten">0</b><span>Kisten Klasse I</span></div>
+    <div><b id="s-kl1">0</b><span>kg Klasse I</span></div>
+    <div><b id="s-ko">0</b><span>kg Kompost</span></div>
+  </section>
+
+  <section class="leiste" aria-label="Wichtigste Knöpfe">
+    <button type="button" class="knopf haupt gross" id="b-anmelden">Helfer anmelden</button>
+    <button type="button" class="knopf gross" id="b-senden">Senden</button>
+  </section>
+  <section class="leiste" aria-label="Für alle Helfer">
+    <button type="button" class="knopf" id="b-allepause">Alle Pause</button>
+    <button type="button" class="knopf" id="b-alleweiter">Alle weiter</button>
+    <button type="button" class="knopf rot" id="b-alleende">Alle Feierabend</button>
+  </section>
+
+  <section aria-labelledby="h-helfer">
+    <h2 id="h-helfer">Helfer an diesem Tag</h2>
+    <div class="karten" id="karten"></div>
+  </section>
+
+  <section aria-labelledby="h-saetze">
+    <h2 id="h-saetze">Je Satz</h2>
+    <div class="liste"><table class="num"><thead><tr><th>Satz</th><th class="r">Helfer</th><th class="r">Std.</th><th class="r">Kisten</th><th class="r">kg Kl. I</th><th class="r">kg Kompost</th><th class="r">Ø kg/Std.</th></tr></thead><tbody id="t-saetze"></tbody></table></div>
+  </section>
+
+  <section aria-labelledby="h-eintraege">
+    <h2 id="h-eintraege">Einträge des Tages</h2>
+    <div class="liste"><table class="num"><thead><tr><th>Zeit</th><th>Nr.</th><th>Was</th><th>Satz</th><th class="r">Kisten</th><th class="r">kg Kl. I</th><th class="r">kg Kompost</th><th></th></tr></thead><tbody id="t-eintraege"></tbody></table></div>
+    <button type="button" class="knopf klein" id="b-alle-eintraege" hidden></button>
+  </section>
+
+  <details id="einstellungen">
+    <summary>Einstellungen und Erntehelfer</summary>
+    <div class="inhalt">
+      <div class="stamm">
+        <h2>Erntehelfer</h2>
+        <p class="klein-text">Nummer wie auf der Karte des Helfers. Abgereiste Helfer abmelden, nicht löschen.</p>
+        <div id="stamm-liste" class="stamm"></div>
+        <div class="zeile">
+          <input type="number" id="neu-nr" placeholder="Nr." min="1" step="1" inputmode="numeric" aria-label="Nummer des neuen Helfers">
+          <input type="text" id="neu-name" placeholder="Name oder Kürzel" maxlength="40" autocomplete="off" aria-label="Name des neuen Helfers">
+          <button type="button" class="knopf klein" id="b-neu">Hinzufügen</button>
+        </div>
+        <p class="meldung" id="stamm-meldung" role="alert"></p>
+      </div>
+      <div class="leiste">
+        <button type="button" class="knopf klein" id="b-alles-senden">Ganze Saison senden (Sicherung)</button>
+        <button type="button" class="knopf klein" id="b-update" hidden>Nach neuer Version suchen</button>
+      </div>
+      <p class="klein-text" id="installieren" hidden>Als App aufs Handy legen: Android (Chrome): Menü mit den drei Punkten, dann „Zum Startbildschirm hinzufügen“. iPhone (Safari): Teilen-Knopf, dann „Zum Home-Bildschirm“. Danach immer über dieses Symbol öffnen.</p>
+      <p class="klein-text num" id="info"></p>
+    </div>
+  </details>
+</main>
+
+<dialog id="dlg"><form id="dlg-form" method="dialog"></form></dialog>
+<div id="toast" hidden role="status"><span id="toast-text"></span><button type="button" id="toast-undo">Rückgängig</button></div>
+
+<script>
+"use strict";
+const APP_VERSION = "1.0.0";
+const CACHE = "ernte-v1";                      // gleicher Name wie in sw.js
+const DATEIEN = ["./", "./saetze.json", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
+const ARTEN = { start: "Start", pause: "Pause", weiter: "Weiter", ende: "Feierabend", wiegung: "Wiegung" };
+const KISTE_MIN = 4.6, KISTE_MAX = 6.0;        // kg je Kiste, außerhalb wird nachgefragt
+const KISTEN_VIEL = 30, KOMPOST_VIEL = 20;     // je Wiegung, darüber wird nachgefragt
+const ERINNERN_NACH_STD = 2;                   // „Senden“ wird auffällig, wenn Einträge so lange ungesendet sind
+
+const S = {
+  sp: null, geraet: "", vorschau: false, saetzeFehlen: false, saetzeStand: "",
+  datum: heute(), folgtHeute: true, eintraege: [], helfer: [], saetze: [],
+  offen: {}, offenSeit: null, letzterVersand: null, fehltEnde: [],
+  alleZeigen: false, bereit: false, fatal: "", dauerhaft: null, sw: false
+};
+const $ = (id) => document.getElementById(id);
+
+/* ---------- Kleine Helfer ---------- */
+function zw(n) { return String(n).padStart(2, "0"); }
+function tagText(d) { return d.getFullYear() + "-" + zw(d.getMonth() + 1) + "-" + zw(d.getDate()); }
+function heute() { return tagText(new Date()); }
+function datumPlus(datum, tage) { const [j, m, t] = datum.split("-").map(Number); return tagText(new Date(j, m - 1, t + tage)); }
+function datumKurz(datum) { const [j, m, t] = datum.split("-").map(Number); return ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][new Date(j, m - 1, t).getDay()] + ". " + zw(t) + "." + zw(m) + "."; }
+function jetztZeit() { const d = new Date(); return zw(d.getHours()) + ":" + zw(d.getMinutes()); }
+function minuten(z) { const [h, m, s] = z.split(":").map(Number); return h * 60 + m + (s || 0) / 60; }
+function zufall(n) { let s = ""; while (s.length < n) s += Math.random().toString(36).slice(2); return s.slice(0, n); }
+function rund2(x) { return Math.round(x * 100) / 100; }
+// Dezimalzahl mit Komma ODER Punkt („15,4“ und „15.4“ sind beide 15,4). Alles andere (z. B. „1.234,5“) ist ungültig.
+function zahl(t) {
+  const s = String(t == null ? "" : t).replace(/\s/g, "");
+  if (s === "") return 0;
+  if (!/^\d+([.,]\d+)?$/.test(s)) return NaN;
+  return Number(s.replace(",", "."));
+}
+function de(n, s = 1) { return rund2(n).toLocaleString("de-DE", { minimumFractionDigits: s, maximumFractionDigits: s }); }
+function nachZeit(a, b) { return a.zeit < b.zeit ? -1 : a.zeit > b.zeit ? 1 : String(a.erfasst_am).localeCompare(String(b.erfasst_am)); }
+function el(tag, attrs = {}, ...kinder) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k === "text") e.textContent = v;
+    else if (v !== false && v != null) e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kinder) if (k != null) e.append(k);
+  return e;
+}
+function helferName(nr) { const h = S.helfer.find((x) => x.nr === nr); return h ? h.name : ""; }
+function satzName(id) { const s = S.saetze.find((x) => x.id === id); return s ? s.schlag + " · " + s.sorte : (id ? "Satz " + id : "–"); }
+function zeitMitSekunden(hhmm) { return hhmm + ":" + (S.datum === heute() && hhmm === jetztZeit() ? zw(new Date().getSeconds()) : "00"); }
+
+/* ---------- Speicher auf dem Handy (IndexedDB). Jede Eingabe wird sofort geschrieben. ---------- */
+function idbSpeicher(name) {
+  let db = null;
+  function tx(stores, modus, arbeit) {
+    return new Promise((ok, nein) => {
+      let t;
+      try { t = db.transaction(stores, modus); } catch (e) { nein(e); return; }
+      const erg = {};
+      t.oncomplete = () => ok(erg);
+      t.onerror = () => nein(t.error || new Error("Speicherfehler"));
+      t.onabort = () => nein(t.error || new Error("Speichern abgebrochen"));
+      try { arbeit(t, erg); } catch (e) { try { t.abort(); } catch (_) { /* schon beendet */ } nein(e); }
+    });
+  }
+  const lesen = (quelle, bereich) => tx(["eintraege"], "readonly", (t, erg) => {
+    const s = t.objectStore("eintraege");
+    const q = (quelle === "datum" ? s.index("datum") : s).getAll(bereich);
+    q.onsuccess = () => { erg.liste = q.result; };
+  }).then((erg) => erg.liste || []);
+  return {
+    oeffnen() {
+      return new Promise((ok, nein) => {
+        let req;
+        try { req = indexedDB.open(name, 1); } catch (e) { nein(e); return; }
+        req.onupgradeneeded = () => {
+          const d = req.result;
+          if (!d.objectStoreNames.contains("eintraege")) d.createObjectStore("eintraege", { keyPath: "id" }).createIndex("datum", "datum");
+          if (!d.objectStoreNames.contains("kv")) d.createObjectStore("kv");
+        };
+        req.onsuccess = () => { db = req.result; db.onversionchange = () => db.close(); ok(); };
+        req.onerror = () => nein(req.error || new Error("Speicher lässt sich nicht öffnen"));
+        req.onblocked = () => nein(new Error("Speicher ist blockiert"));
+      });
+    },
+    tag: (datum) => lesen("datum", IDBKeyRange.only(datum)),
+    bereich: (von, bis) => lesen("datum", IDBKeyRange.bound(von, bis)),
+    alle: () => lesen("alle"),
+    holen: (ids) => tx(["eintraege"], "readonly", (t, erg) => {
+      erg.liste = [];
+      const s = t.objectStore("eintraege");
+      for (const id of ids) { const q = s.get(id); q.onsuccess = () => { if (q.result) erg.liste.push(q.result); }; }
+    }).then((erg) => erg.liste),
+    kvLesen: (keys) => tx(["kv"], "readonly", (t, erg) => {
+      const s = t.objectStore("kv");
+      for (const k of keys) { const q = s.get(k); q.onsuccess = () => { erg[k] = q.result; }; }
+    }),
+    // Einträge und Merker gemeinsam schreiben: entweder alles oder nichts.
+    schreiben: (eintraege, kv) => tx(["eintraege", "kv"], "readwrite", (t) => {
+      const s = t.objectStore("eintraege"), k = t.objectStore("kv");
+      for (const e of eintraege) s.put(e);
+      for (const [a, b] of Object.entries(kv || {})) k.put(b, a);
+    })
+  };
+}
+// Nur für die Vorschau, falls der Browser dort keinen Speicher erlaubt: alles nur im Arbeitsspeicher.
+function fluechtigerSpeicher() {
+  const e = new Map(), kv = {};
+  const kopie = (x) => JSON.parse(JSON.stringify(x));
+  return {
+    oeffnen: async () => {},
+    tag: async (d) => [...e.values()].filter((x) => x.datum === d).map(kopie),
+    bereich: async (von, bis) => [...e.values()].filter((x) => x.datum >= von && x.datum <= bis).map(kopie),
+    alle: async () => [...e.values()].map(kopie),
+    holen: async (ids) => ids.map((id) => e.get(id)).filter(Boolean).map(kopie),
+    kvLesen: async (keys) => Object.fromEntries(keys.map((k) => [k, kv[k] === undefined ? undefined : kopie(kv[k])])),
+    schreiben: async (liste, neu) => { for (const x of liste) e.set(x.id, kopie(x)); Object.assign(kv, kopie(neu || {})); }
+  };
+}
+
+/* ---------- Auswertung eines Tages (gleiche Logik wie v_arbeitsabschnitte in der Hof-Datenbank) ---------- */
+// jetztMin: Minuten seit Mitternacht, bis zu denen ein offener Abschnitt zählt (heute), sonst null (zählt nicht).
+function auswerten(eintraege, jetztMin) {
+  const aktiv = eintraege.filter((e) => !e.storniert).sort(nachZeit);
+  const pro = new Map();
+  const h = (nr) => { if (!pro.has(nr)) pro.set(nr, { nr, status: "fehlt", satz: null, min: 0, kisten: 0, kl1: 0, ko: 0, satzMin: new Map() }); return pro.get(nr); };
+  const ereignisse = new Map();
+  for (const e of aktiv) {
+    const p = h(e.helfer);
+    if (e.art === "wiegung") { p.kisten += e.kisten || 0; p.kl1 += e.klasse1_kg || 0; p.ko += e.kompost_kg || 0; continue; }
+    if (!ereignisse.has(e.helfer)) ereignisse.set(e.helfer, []);
+    ereignisse.get(e.helfer).push(e);
+  }
+  for (const [nr, liste] of ereignisse) {
+    const p = h(nr);
+    liste.forEach((e, i) => {
+      if (e.art === "start" || e.art === "weiter") {
+        const ende = i + 1 < liste.length ? minuten(liste[i + 1].zeit) : jetztMin;
+        if (ende != null) { const d = Math.max(0, ende - minuten(e.zeit)); p.min += d; p.satzMin.set(e.satz, (p.satzMin.get(e.satz) || 0) + d); }
+      }
+      if (e.satz) p.satz = e.satz;
+    });
+    const letzt = liste[liste.length - 1].art;
+    p.status = letzt === "pause" ? "pause" : letzt === "ende" ? "feierabend" : "arbeitet";
+  }
+  for (const e of aktiv) if (e.art === "wiegung" && !h(e.helfer).satz) h(e.helfer).satz = e.satz;
+  const saetze = new Map();
+  const sz = (id) => { if (!saetze.has(id)) saetze.set(id, { id, helfer: new Set(), min: 0, kisten: 0, kl1: 0, ko: 0 }); return saetze.get(id); };
+  for (const p of pro.values()) for (const [id, m] of p.satzMin) { const s = sz(id); s.min += m; s.helfer.add(p.nr); }
+  for (const e of aktiv) if (e.art === "wiegung") { const s = sz(e.satz); s.kisten += e.kisten || 0; s.kl1 += e.klasse1_kg || 0; s.ko += e.kompost_kg || 0; s.helfer.add(e.helfer); }
+  return { pro, saetze };
+}
+function tagAuswerten() { return auswerten(S.eintraege, S.datum === heute() ? minuten(jetztZeit()) : null); }
+
+/* ---------- Anzeige ---------- */
+function offenAnzahl() { return Object.values(S.offen).reduce((a, b) => a + b, 0); }
+
+function zeichnen() {
+  const istHeute = S.datum === heute();
+  const { pro, saetze } = tagAuswerten();
+  let kisten = 0, kl1 = 0, ko = 0, amFeld = 0;
+  for (const p of pro.values()) { kisten += p.kisten; kl1 += p.kl1; ko += p.ko; if (p.status === "arbeitet" || p.status === "pause") amFeld++; }
+  $("s-helfer").textContent = amFeld; $("s-kisten").textContent = kisten; $("s-kl1").textContent = de(kl1); $("s-ko").textContent = de(ko);
+
+  hinweiseZeichnen(istHeute);
+
+  const karten = $("karten"); karten.replaceChildren();
+  const reihen = [...pro.values()].sort((a, b) => a.nr - b.nr);
+  if (!reihen.length) karten.append(el("p", { class: "leer", text: !S.bereit ? "Lädt …" : S.helfer.some((x) => x.aktiv !== false) ? "Noch niemand angemeldet. Oben auf „Helfer anmelden“ tippen, dann Satz und Helfer wählen." : "Zuerst unten bei „Einstellungen und Erntehelfer“ die Helfer mit ihrer Nummer anlegen." }));
+  const statusText = { arbeitet: "pflückt", pause: "Pause", feierabend: "Feierabend", fehlt: "nicht angemeldet" };
+  for (const p of reihen) {
+    const std = p.min / 60;
+    const pause = p.status === "pause";
+    const endeFehlt = !istHeute && (p.status === "arbeitet" || pause);
+    karten.append(el("article", { class: "karte " + (endeFehlt ? "fehlt" : p.status) },
+      el("div", { class: "kopf" }, el("span", { class: "nr num", text: p.nr }), el("span", { class: "name", text: helferName(p.nr) || "–" }),
+        el("span", { class: "chip " + (endeFehlt ? "fehlt" : p.status), text: endeFehlt ? "Feierabend fehlt" : statusText[p.status] })),
+      el("div", { class: "satz", text: satzName(p.satz) }),
+      el("div", { class: "zahlen num" },
+        el("span", { text: de(std) + " Std." }),
+        el("span", { text: p.kisten + " Kisten" }),
+        el("span", { class: "kl1", text: de(p.kl1) + " kg" }),
+        el("span", { class: "ko", text: de(p.ko) + " kg Kompost" }),
+        el("span", { text: std > 0.05 ? de(p.kl1 / std) + " kg/Std." : "– kg/Std." })),
+      el("div", { class: "aktionen" },
+        el("button", { type: "button", class: "knopf haupt", onclick: () => dlgWiegen(p), text: "Wiegen" }),
+        el("button", { type: "button", class: "knopf", disabled: p.status === "feierabend" || p.status === "fehlt", onclick: () => (istHeute ? einzel(p.nr, pause ? "weiter" : "pause", p.satz) : dlgMehr(p, pause ? "weiter" : "pause")), text: pause ? "Weiter" : "Pause" }),
+        el("button", { type: "button", class: "knopf", onclick: () => dlgMehr(p, endeFehlt ? "ende" : null), text: "Mehr" }))));
+  }
+
+  const ts = $("t-saetze"); ts.replaceChildren();
+  for (const s of [...saetze.values()].sort((a, b) => b.kl1 - a.kl1)) {
+    const std = s.min / 60;
+    ts.append(el("tr", {}, el("td", { text: satzName(s.id) }), el("td", { class: "r", text: s.helfer.size }), el("td", { class: "r", text: de(std) }),
+      el("td", { class: "r", text: s.kisten }), el("td", { class: "r", text: de(s.kl1) }), el("td", { class: "r", text: de(s.ko) }),
+      el("td", { class: "r", text: std > 0.05 ? de(s.kl1 / std) : "–" })));
+  }
+  if (!saetze.size) ts.append(el("tr", {}, el("td", { colspan: 7, text: "–" })));
+
+  const te = $("t-eintraege"); te.replaceChildren();
+  const alle = [...S.eintraege].sort((a, b) => nachZeit(b, a));
+  const zeigen = S.alleZeigen ? alle : alle.slice(0, 30);
+  for (const e of zeigen) {
+    const w = e.art === "wiegung";
+    te.append(el("tr", { class: e.storniert ? "storno" : "" },
+      el("td", { text: e.zeit.slice(0, 5) }), el("td", { text: e.helfer }), el("td", { text: ARTEN[e.art] || e.art }), el("td", { text: satzName(e.satz) }),
+      el("td", { class: "r", text: w ? e.kisten : "" }), el("td", { class: "r", text: w ? de(e.klasse1_kg || 0) : "" }), el("td", { class: "r", text: w ? de(e.kompost_kg || 0) : "" }),
+      el("td", {}, e.storniert ? el("span", { class: "chip", text: "storniert" })
+        : el("button", { type: "button", class: "knopf klein rot", onclick: () => dlgStorno(e), text: "Storno" }))));
+  }
+  if (!alle.length) te.append(el("tr", {}, el("td", { colspan: 8, text: "Noch keine Einträge an diesem Tag." })));
+  const mehr = $("b-alle-eintraege");
+  mehr.hidden = alle.length <= 30;
+  mehr.textContent = S.alleZeigen ? "Nur die letzten 30 zeigen" : "Alle " + alle.length + " Einträge zeigen";
+
+  const n = offenAnzahl(), st = $("stand"), bs = $("b-senden");
+  const alt = S.offenSeit && (Date.now() - Date.parse(S.offenSeit)) > ERINNERN_NACH_STD * 3600000;
+  if (S.fatal) { st.textContent = "Fehler"; st.className = "offen"; }
+  else if (!S.bereit) { st.textContent = "lädt …"; st.className = ""; }
+  else if (n) { st.textContent = n + " ungesendet"; st.className = "offen"; }
+  else { st.textContent = "alles gesendet"; st.className = "ok"; }
+  bs.textContent = n ? "Senden (" + n + " neu)" : "Senden";
+  bs.className = "knopf gross" + (n && alt ? " dringend" : "");
+  for (const id of ["b-anmelden", "b-senden", "b-allepause", "b-alleweiter", "b-alleende", "b-neu", "b-alles-senden"]) $(id).disabled = !S.bereit;
+
+  stammZeichnen();
+  $("info").textContent = "Gerät " + (S.geraet || "–") + " · App " + APP_VERSION + " · " + S.saetze.length + " Sätze, Stand " + (S.saetzeStand || "–")
+    + (S.letzterVersand ? " · zuletzt gesendet " + new Date(S.letzterVersand).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "")
+    + (S.dauerhaft === true ? " · Speicher geschützt" : "");
+}
+
+function hinweiseZeichnen(istHeute) {
+  const box = $("hinweise"); box.replaceChildren();
+  const banner = (art, text, knopfText, aktion) => box.append(el("div", { class: "banner " + art, role: art === "rot" ? "alert" : null },
+    el("span", { text }), knopfText ? el("button", { type: "button", class: "knopf klein", onclick: aktion, text: knopfText }) : null));
+  if (S.fatal) banner("rot", S.fatal);
+  if (S.vorschau) banner("ruhig", "Vorschau mit Testdaten. Hier kannst du alles ausprobieren. Das Senden per WhatsApp funktioniert erst auf der echten Adresse.");
+  if (S.saetzeFehlen) banner("rot", "Die Liste der Sätze (Feld und Sorte) fehlt noch. Die Seite einmal mit Internet öffnen.");
+  if (!istHeute) banner("", "Du trägst für " + datumKurz(S.datum) + " nach. Die Uhrzeit musst du selbst eintragen.", "Zurück zu heute", () => tagWechseln(heute()));
+  for (const f of S.fehltEnde) if (f.datum !== S.datum) banner("", "Am " + datumKurz(f.datum) + " fehlt der Feierabend bei Nr. " + f.nrs.join(", ") + ".", "Tag öffnen", () => tagWechseln(f.datum));
+}
+
+function toast(text, ids) {
+  $("toast-text").textContent = text;
+  $("toast").hidden = false;
+  $("toast-undo").hidden = !ids || !ids.length;
+  $("toast-undo").onclick = async () => {
+    $("toast").hidden = true;
+    try { await stornieren(ids); } catch (e) { toast("Rückgängig hat nicht geklappt. Bitte den Eintrag unten stornieren."); }
+  };
+  clearTimeout(toast.t); toast.t = setTimeout(() => { $("toast").hidden = true; }, 7000);
+}
+
+/* ---------- Laden und Schreiben ---------- */
+async function tagLaden() {
+  S.eintraege = await S.sp.tag(S.datum);
+  if (S.datum < heute()) await endePruefen();
+  zeichnen();
+}
+async function tagWechseln(datum) {
+  if (!S.bereit) return;
+  const h = heute();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datum) || datum > h) datum = h;   // keine Einträge für die Zukunft
+  S.datum = datum; S.folgtHeute = datum === h; S.alleZeigen = false;
+  $("datum").value = datum; $("datum").max = h;
+  await tagLaden();
+}
+// Gibt es in den letzten 7 Tagen Helfer ohne Feierabend? Dann fehlen Stunden.
+async function endePruefen() {
+  const h = heute();
+  const liste = await S.sp.bereich(datumPlus(h, -7), datumPlus(h, -1));
+  const tage = new Map();
+  for (const e of liste) { if (!tage.has(e.datum)) tage.set(e.datum, []); tage.get(e.datum).push(e); }
+  S.fehltEnde = [];
+  for (const [datum, eintraege] of [...tage].sort()) {
+    const nrs = [...auswerten(eintraege, null).pro.values()].filter((p) => p.status === "arbeitet" || p.status === "pause").map((p) => p.nr).sort((a, b) => a - b);
+    if (nrs.length) S.fehltEnde.push({ datum, nrs });
+  }
+}
+// Merker „was ist noch ungesendet“ frisch aus dem Speicher lesen (die Seite kann in zwei Fenstern offen sein).
+async function merkerLesen() {
+  const kv = await S.sp.kvLesen(["offen", "offen_seit", "letzter_versand"]);
+  S.offen = kv.offen && typeof kv.offen === "object" ? kv.offen : {};
+  S.offenSeit = kv.offen_seit || null;
+  S.letzterVersand = kv.letzter_versand || null;
+}
+// Schreibt Einträge und merkt sie als „ungesendet“ vor.
+async function buchen(eintraege) {
+  if (!eintraege.length) return;
+  await merkerLesen();
+  const offen = Object.assign({}, S.offen);
+  for (const e of eintraege) offen[e.datum] = (offen[e.datum] || 0) + 1;
+  const offenSeit = S.offenSeit || new Date().toISOString();
+  await S.sp.schreiben(eintraege, { offen, offen_seit: offenSeit });
+  S.offen = offen; S.offenSeit = offenSeit;
+  await tagLaden();
+}
+async function speichern(liste) {
+  const jetzt = new Date().toISOString();
+  const eintraege = liste.map((roh) => {
+    const e = Object.assign({ datum: S.datum, storniert: false, erfasst_am: jetzt, geaendert_am: jetzt }, roh);
+    e.id = e.datum + "_" + e.zeit.replace(/:/g, "") + "_" + e.helfer + "_" + S.geraet + "_" + zufall(5);
+    return e;
+  });
+  await buchen(eintraege);
+  return eintraege.map((e) => e.id);
+}
+async function stornieren(ids) {
+  const jetzt = new Date().toISOString();
+  const liste = (await S.sp.holen(ids)).filter((e) => !e.storniert);
+  for (const e of liste) { e.storniert = true; e.geaendert_am = jetzt; }
+  await buchen(liste);
+}
+function fehlerText(e) {
+  if (e && e.name === "QuotaExceededError") return "Der Speicher des Handys ist voll. Bitte Platz schaffen und nochmal versuchen.";
+  return "Speichern hat nicht geklappt (" + (e && (e.message || e.name) || "Fehler") + "). Bitte nochmal versuchen.";
+}
+let einzelLaeuft = false;
+async function einzel(nr, art, satz) {
+  if (einzelLaeuft) return;                  // Doppeltippen darf nicht doppelt buchen
+  einzelLaeuft = true;
+  try {
+    const ids = await speichern([{ zeit: zeitMitSekunden(jetztZeit()), helfer: nr, art, satz }]);
+    toast("Nr. " + nr + ": " + ARTEN[art] + " gespeichert", ids);
+  } catch (e) { toast(fehlerText(e)); }
+  einzelLaeuft = false;
+}
+
+/* ---------- Dialoge ---------- */
+const dlg = $("dlg");
+function dlgAuf() { if (dlg.open) return; if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", ""); }
+function dlgZu() { if (typeof dlg.close === "function") dlg.close(); else dlg.removeAttribute("open"); }
+function formular(titel) { const f = $("dlg-form"); f.onsubmit = (ev) => ev.preventDefault(); f.replaceChildren(el("h3", { text: titel })); return f; }
+function fuss(f, text, aktion, art = "haupt") {
+  const m = el("p", { class: "meldung", role: "alert" });
+  const ok = el("button", { type: "submit", class: "knopf " + art, text });
+  f.append(m, el("div", { class: "fuss" }, el("button", { type: "button", class: "knopf", onclick: dlgZu, text: "Abbrechen" }), ok));
+  let laeuft = false;
+  f.onsubmit = async (ev) => {
+    ev.preventDefault();
+    if (laeuft) return;                    // Doppeltippen darf nicht doppelt speichern
+    laeuft = true; ok.disabled = true; m.className = "meldung"; m.textContent = "";
+    let r;
+    try { r = await aktion(m); } catch (e) { r = fehlerText(e); }
+    laeuft = false; ok.disabled = false;
+    if (r === true) dlgZu(); else if (typeof r === "string") m.textContent = r;
+  };
+  dlgAuf();
+  return m;
+}
+function zeitFeld(f) {
+  const istHeute = S.datum === heute();
+  const i = el("input", { type: "time", id: "f-zeit", value: istHeute ? jetztZeit() : "", required: true });
+  f.append(el("label", { class: "feld", for: "f-zeit" }, el("span", { text: istHeute ? "Uhrzeit (jetzt; bei Nachtrag ändern)" : "Uhrzeit am " + datumKurz(S.datum) }), i));
+  return i;
+}
+function zeitPruefen(wert) {
+  if (!/^\d{2}:\d{2}$/.test(wert)) return "Bitte die Uhrzeit angeben.";
+  if (S.datum === heute() && minuten(wert) > minuten(jetztZeit()) + 1) return "Die Uhrzeit liegt in der Zukunft.";
+  return "";
+}
+function wahl(f, titel, optionen, vorwahl, klasse = "") {
+  let wert = vorwahl == null ? null : vorwahl;
+  const box = el("div", { class: "wahl " + klasse, role: "group", "aria-label": titel });
+  for (const [w, text] of optionen) {
+    const b = el("button", { type: "button", "aria-pressed": String(w === wert), text, onclick: () => { wert = w; box.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); } });
+    box.append(b);
+  }
+  f.append(el("div", { class: "feld" }, el("span", { text: titel }), box));
+  return { wert: () => wert, box };
+}
+// eingeklappt: Ist der Satz des Helfers bekannt, steht er nur als Zeile da; „ändern“ zeigt die ganze Liste.
+function satzWahl(f, vorwahl, eingeklappt) {
+  const bekannt = S.saetze.some((s) => s.id === vorwahl);
+  const w = wahl(f, "Satz (Feld · Sorte)", S.saetze.map((s) => [s.id, s.schlag + " · " + s.sorte]), bekannt ? vorwahl : null);
+  if (!S.saetze.length) w.box.append(el("p", { class: "leer", text: "Keine Sätze vorhanden. Die Seite einmal mit Internet öffnen." }));
+  if (eingeklappt && bekannt) {
+    w.box.hidden = true;
+    const zeile = el("div", { class: "satzzeile" }, el("b", { text: satzName(vorwahl) }),
+      el("button", { type: "button", class: "knopf klein", onclick: () => { zeile.hidden = true; w.box.hidden = false; }, text: "ändern" }));
+    w.box.before(zeile);
+  }
+  return w.wert;
+}
+
+function dlgAnmelden() {
+  const { pro } = tagAuswerten();
+  const f = formular("Helfer anmelden");
+  const satz = satzWahl(f, null);
+  const gewaehlt = new Set();
+  const box = el("div", { class: "wahl nummern", role: "group", "aria-label": "Helfer" });
+  const liste = S.helfer.filter((x) => x.aktiv !== false).sort((a, b) => a.nr - b.nr);
+  for (const x of liste) {
+    const st = pro.get(x.nr) && pro.get(x.nr).status;
+    const laeuft = st === "arbeitet" || st === "pause";
+    const b = el("button", { type: "button", "aria-pressed": "false", title: x.name, text: x.nr + (laeuft ? " •" : ""),
+      onclick: () => { if (gewaehlt.has(x.nr)) gewaehlt.delete(x.nr); else gewaehlt.add(x.nr); b.setAttribute("aria-pressed", String(gewaehlt.has(x.nr))); } });
+    box.append(b);
+  }
+  if (!liste.length) box.append(el("p", { class: "leer", text: "Noch keine Helfer angelegt. Unten bei „Einstellungen und Erntehelfer“ anlegen." }));
+  f.append(el("div", { class: "feld" }, el("span", { text: "Helfer (• = schon angemeldet, wechselt dann den Satz)" }), box));
+  const z = zeitFeld(f);
+  fuss(f, "Starten", async () => {
+    if (!satz()) return "Bitte einen Satz wählen.";
+    if (!gewaehlt.size) return "Bitte mindestens einen Helfer wählen.";
+    const zf = zeitPruefen(z.value); if (zf) return zf;
+    const nrs = [...gewaehlt].sort((a, b) => a - b);
+    const ids = await speichern(nrs.map((nr) => ({ zeit: zeitMitSekunden(z.value), helfer: nr, art: "start", satz: satz() })));
+    toast(ids.length + " Helfer auf " + satzName(satz()) + " gestartet", ids);
+    return true;
+  });
+}
+
+function dlgWiegen(p) {
+  const nr = p.nr;
+  const f = formular("Wiegen: Nr. " + nr + (helferName(nr) ? " · " + helferName(nr) : ""));
+  const satz = satzWahl(f, p.satz, true);
+  const kisten = el("input", { type: "number", id: "f-kisten", min: "0", step: "1", value: "1", inputmode: "numeric" });
+  const schritt = (d) => { kisten.value = Math.max(0, (parseInt(kisten.value, 10) || 0) + d); };
+  f.append(el("div", { class: "feld" }, el("span", { text: "Kisten Klasse I (je 10 × 500 g)" }),
+    el("div", { class: "stepper" },
+      el("button", { type: "button", "aria-label": "eine Kiste weniger", onclick: () => schritt(-1), text: "−" }),
+      kisten,
+      el("button", { type: "button", "aria-label": "eine Kiste mehr", onclick: () => schritt(1), text: "+" }))));
+  const kg = el("input", { type: "text", id: "f-kg", inputmode: "decimal", placeholder: "z. B. 15,4", autocomplete: "off" });
+  const ko = el("input", { type: "text", id: "f-ko", inputmode: "decimal", placeholder: "0", autocomplete: "off" });
+  f.append(el("div", { class: "zweispaltig" },
+    el("label", { class: "feld", for: "f-kg" }, el("span", { text: "Gewicht Klasse I, kg" }), kg),
+    el("label", { class: "feld", for: "f-ko" }, el("span", { text: "Kompost, kg" }), ko)));
+  const z = zeitFeld(f);
+  let bestaetigt = "";
+  fuss(f, "Speichern", async (m) => {
+    if (!satz()) return "Bitte den Satz wählen.";
+    const kText = String(kisten.value).trim();
+    const k = kText === "" ? 0 : Number(kText), g = rund2(zahl(kg.value)), c = rund2(zahl(ko.value));
+    if (!Number.isInteger(k) || k < 0) return "Kisten: bitte eine ganze Zahl.";
+    if (isNaN(g) || isNaN(c)) return "Gewicht bitte als Zahl eintragen, z. B. 15,4.";
+    if (k > 0 && g <= 0) return "Bitte das Gewicht der " + k + " Kiste(n) eintragen.";
+    if (k === 0 && g > 0) return "Gewicht ohne Kisten: bitte die Kistenzahl eintragen.";
+    if (k === 0 && c <= 0) return "Bitte Kisten oder Kompost eintragen.";
+    const zf = zeitPruefen(z.value); if (zf) return zf;
+    const auffaellig = [];
+    if (k && (g / k < KISTE_MIN || g / k > KISTE_MAX)) auffaellig.push(de(g / k, 2) + " kg je Kiste");
+    if (k > KISTEN_VIEL) auffaellig.push(k + " Kisten auf einmal");
+    if (c > KOMPOST_VIEL) auffaellig.push(de(c) + " kg Kompost");
+    const schluessel = [k, g, c].join("|");
+    if (auffaellig.length && bestaetigt !== schluessel) {
+      bestaetigt = schluessel; m.className = "meldung warn";
+      return "Ungewöhnlich: " + auffaellig.join(", ") + ". Stimmt das? Dann nochmal „Speichern“.";
+    }
+    const ids = await speichern([{ zeit: zeitMitSekunden(z.value), helfer: nr, art: "wiegung", satz: satz(), kisten: k, klasse1_kg: g, kompost_kg: c }]);
+    toast("Nr. " + nr + ": " + k + " Kisten, " + de(g) + " kg" + (c ? ", Kompost " + de(c) + " kg" : ""), ids);
+    return true;
+  });
+  setTimeout(() => kg.focus(), 50);
+}
+
+function dlgMehr(p, vorwahl) {
+  const f = formular("Nr. " + p.nr + (helferName(p.nr) ? " · " + helferName(p.nr) : ""));
+  const laeuft = p.status === "arbeitet" || p.status === "pause";
+  const art = wahl(f, "Was ist passiert?", [["start", laeuft ? "Satz wechseln" : "Wieder starten"], ["pause", "Pause"], ["weiter", "Weiter nach Pause"], ["ende", "Feierabend"]], vorwahl);
+  f.append(el("p", { class: "klein-text", text: "Vor einem Satzwechsel bitte erst wiegen, sonst zählen die Kisten zum neuen Satz." }));
+  const satz = satzWahl(f, p.satz);
+  const z = zeitFeld(f);
+  fuss(f, "Speichern", async () => {
+    if (!art.wert()) return "Bitte auswählen, was passiert ist.";
+    if (!satz()) return "Bitte den Satz wählen.";
+    const zf = zeitPruefen(z.value); if (zf) return zf;
+    const ids = await speichern([{ zeit: zeitMitSekunden(z.value), helfer: p.nr, art: art.wert(), satz: satz() }]);
+    toast("Nr. " + p.nr + ": " + ARTEN[art.wert()] + " gespeichert", ids);
+    return true;
+  });
+}
+
+function dlgSammel(art) {
+  const { pro } = tagAuswerten();
+  const betroffen = [...pro.values()].filter((p) => (art === "pause" ? p.status === "arbeitet" : art === "weiter" ? p.status === "pause" : p.status === "arbeitet" || p.status === "pause")).sort((a, b) => a.nr - b.nr);
+  if (!betroffen.length) { toast(art === "weiter" ? "Niemand ist in der Pause." : "Niemand ist angemeldet."); return; }
+  const f = formular("Alle: " + ARTEN[art]);
+  f.append(el("p", { text: betroffen.length + " Helfer: Nr. " + betroffen.map((p) => p.nr).join(", ") }));
+  const z = zeitFeld(f);
+  fuss(f, "Für alle speichern", async () => {
+    const zf = zeitPruefen(z.value); if (zf) return zf;
+    const ids = await speichern(betroffen.map((p) => ({ zeit: zeitMitSekunden(z.value), helfer: p.nr, art, satz: p.satz })));
+    toast(betroffen.length + " × " + ARTEN[art] + " gespeichert", ids);
+    return true;
+  }, art === "ende" ? "rot" : "haupt");
+}
+
+function dlgStorno(e) {
+  const f = formular("Eintrag stornieren?");
+  f.append(el("p", { text: e.zeit.slice(0, 5) + " · Nr. " + e.helfer + " · " + (ARTEN[e.art] || e.art) + (e.art === "wiegung" ? " · " + e.kisten + " Kisten, " + de(e.klasse1_kg || 0) + " kg, Kompost " + de(e.kompost_kg || 0) + " kg" : "") }),
+    el("p", { class: "klein-text", text: "Der Eintrag bleibt sichtbar, zählt aber nicht mehr. Den richtigen Wert danach neu eintragen." }));
+  fuss(f, "Stornieren", async () => { await stornieren([e.id]); return true; }, "rot");
+}
+
+/* ---------- Senden: Datei mit allen Einträgen der betroffenen Tage, über das Teilen-Menü (WhatsApp) ---------- */
+function kannTeilen(datei) {
+  try { return !!(datei && navigator.share && navigator.canShare && navigator.canShare({ files: [datei] })); } catch (e) { return false; }
+}
+async function paketBauen(tage, alles) {
+  const liste = alles ? await S.sp.alle() : (await Promise.all(tage.map((t) => S.sp.tag(t)))).flat();
+  liste.sort((a, b) => (a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : nachZeit(a, b)));
+  const jetzt = new Date();
+  const paket = {
+    format: "ernte-erfassung", version: 1, app: APP_VERSION, geraet: S.geraet, erstellt_am: jetzt.toISOString(),
+    tage: [...new Set(liste.map((e) => e.datum))].sort(), helfer: S.helfer, anzahl: liste.length, eintraege: liste
+  };
+  const text = JSON.stringify(paket);
+  // .txt, weil Handys über das Teilen-Menü keine .json-Dateien weitergeben
+  const name = tagText(jetzt) + "_" + zw(jetzt.getHours()) + zw(jetzt.getMinutes()) + "_ernte_" + S.geraet + ".txt";
+  let datei = null;
+  try { datei = new File([text], name, { type: "text/plain" }); } catch (e) { datei = null; }
+  return { text, name, datei, tage: paket.tage, anzahl: liste.length, alles: !!alles };
+}
+async function alsGesendetMerken(paket) {
+  await merkerLesen();
+  const offen = Object.assign({}, S.offen);
+  if (paket.alles) for (const t of Object.keys(offen)) delete offen[t];
+  else for (const t of paket.tage) delete offen[t];
+  const jetzt = new Date().toISOString();
+  const offenSeit = Object.keys(offen).length ? S.offenSeit : null;
+  await S.sp.schreiben([], { offen, offen_seit: offenSeit, letzter_versand: jetzt });
+  S.offen = offen; S.offenSeit = offenSeit; S.letzterVersand = jetzt;
+  zeichnen();
+}
+
+function dlgSenden(alles) {
+  const f = formular(alles ? "Ganze Saison senden" : "Senden");
+  const lage = el("p", { text: "Bereite die Datei vor …" });
+  const warnung = el("p", { class: "meldung warn" });
+  const haupt = el("button", { type: "button", class: "knopf haupt gross", disabled: true, text: "Jetzt senden" });
+  const anderer = el("button", { type: "button", class: "knopf klein", hidden: true });
+  const m = el("p", { class: "meldung", role: "alert" });
+  const ersatz = el("div", { hidden: true, style: "display:grid;gap:8px" });
+  f.append(lage, warnung, el("div", { class: "leiste" }, haupt), anderer, m, ersatz,
+    el("div", { class: "fuss" }, el("button", { type: "button", class: "knopf", onclick: dlgZu, text: "Schließen" })));
+  let paket = null;
+
+  const fertig = async () => {
+    try { await alsGesendetMerken(paket); } catch (e) { m.textContent = fehlerText(e); return; }
+    dlgZu();
+    toast("Gesendet: " + paket.anzahl + " Einträge. Bitte in WhatsApp nachsehen, ob die Datei verschickt ist.");
+  };
+  const ersatzZeigen = () => {
+    if (!paket || !ersatz.hidden) return;
+    ersatz.hidden = false;
+    const roh = el("textarea", { class: "roh", readonly: true, "aria-label": "Inhalt der Datei" });
+    roh.value = paket.text;
+    const direkt = kannTeilen(paket.datei);
+    ersatz.append(
+      direkt ? el("p", { class: "klein-text", text: "Ersatzweg: Datei speichern und in WhatsApp als Dokument an Julius schicken. Danach hier bestätigen." }) : null,
+      el("div", { class: "leiste" },
+        direkt ? el("button", { type: "button", class: "knopf klein", onclick: () => herunterladen(paket), text: "Datei speichern" }) : null,
+        el("button", { type: "button", class: "knopf klein", onclick: async () => { try { await navigator.clipboard.writeText(paket.text); m.className = "meldung gut"; m.textContent = "Text kopiert."; } catch (e) { roh.focus(); roh.select(); m.className = "meldung warn"; m.textContent = "Bitte den markierten Text von Hand kopieren."; } }, text: "Text kopieren" }),
+        el("button", { type: "button", class: "knopf klein haupt", onclick: fertig, text: "Ich habe die Datei geschickt" })),
+      roh);
+  };
+  const vorbereiten = async (tage, ganz) => {
+    haupt.disabled = true; paket = null; m.textContent = ""; warnung.textContent = ""; ersatz.hidden = true; ersatz.replaceChildren();
+    try { paket = await paketBauen(tage, ganz); } catch (e) { lage.textContent = fehlerText(e); return; }
+    if (!paket.anzahl) { lage.textContent = "Es gibt nichts zu senden."; return; }
+    lage.textContent = paket.anzahl + " Einträge, " + (paket.tage.length === 1 ? "Tag: " : paket.tage.length + " Tage: ") + paket.tage.map(datumKurz).join(", ")
+      + (kannTeilen(paket.datei) ? " Im nächsten Schritt WhatsApp und Julius wählen." : " Dieses Gerät kann nicht direkt teilen: Datei speichern, in WhatsApp als Dokument an Julius schicken, danach unten bestätigen.");
+    const ohneEnde = paket.tage.includes(S.datum) ? [...tagAuswerten().pro.values()].filter((p) => p.status === "arbeitet" || p.status === "pause").map((p) => p.nr).sort((a, b) => a - b) : [];
+    if (ohneEnde.length) warnung.textContent = "Noch ohne Feierabend: Nr. " + ohneEnde.join(", ") + ". Zwischendurch senden ist in Ordnung; nach dem Feierabend bitte nochmal senden.";
+    haupt.textContent = kannTeilen(paket.datei) ? "Jetzt senden" : "Datei speichern";
+    haupt.disabled = false;
+    if (!kannTeilen(paket.datei)) ersatzZeigen();
+  };
+  // Der Klick ruft das Teilen-Menü direkt auf (ohne Wartezeit davor), sonst lehnen iPhones es ab.
+  haupt.onclick = () => {
+    if (!paket) return;
+    m.className = "meldung"; m.textContent = "";
+    if (!kannTeilen(paket.datei)) { herunterladen(paket); return; }
+    navigator.share({ files: [paket.datei], title: "Ernte " + paket.tage.map(datumKurz).join(", ") }).then(fertig, (e) => {
+      if (e && e.name === "AbortError") { m.className = "meldung warn"; m.textContent = "Abgebrochen. Es wurde nichts verschickt."; }
+      else { m.textContent = "Das Teilen hat nicht geklappt. Bitte den Weg unten benutzen."; ersatzZeigen(); }
+    });
+  };
+
+  const offeneTage = Object.keys(S.offen).sort();
+  if (alles) vorbereiten([], true);
+  else if (offeneTage.length) {
+    vorbereiten(offeneTage, false);
+    anderer.hidden = false; anderer.textContent = "Stattdessen nur " + datumKurz(S.datum) + " komplett senden";
+    anderer.onclick = () => { anderer.hidden = true; vorbereiten([S.datum], false); };
+  } else {
+    lage.textContent = "Alles ist schon gesendet.";
+    anderer.hidden = false; anderer.textContent = datumKurz(S.datum) + " nochmal komplett senden";
+    anderer.onclick = () => { anderer.hidden = true; vorbereiten([S.datum], false); };
+  }
+  dlgAuf();
+}
+function herunterladen(paket) {
+  try {
+    const url = URL.createObjectURL(new Blob([paket.text], { type: "text/plain" }));
+    const a = el("a", { href: url, download: paket.name, style: "display:none" });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) { /* dann bleibt „Text kopieren“ */ }
+}
+
+/* ---------- Erntehelfer verwalten ---------- */
+function stammZeichnen() {
+  const l = $("stamm-liste");
+  if (l.contains(document.activeElement)) return;          // nicht neu aufbauen, während jemand tippt
+  l.replaceChildren();
+  for (const x of [...S.helfer].sort((a, b) => a.nr - b.nr)) {
+    const name = el("input", { type: "text", value: x.name || "", maxlength: "40", autocomplete: "off", "aria-label": "Name Nr. " + x.nr, id: "st-" + x.nr });
+    if (x.aktiv === false) name.style.opacity = ".5";
+    name.addEventListener("change", () => helferSpeichern(S.helfer.map((y) => (y.nr === x.nr ? Object.assign({}, y, { name: name.value.trim() }) : y))));
+    l.append(el("div", { class: "zeile" }, el("b", { class: "num", text: "Nr. " + x.nr }), name,
+      el("button", { type: "button", class: "knopf klein", onclick: () => helferSpeichern(S.helfer.map((y) => (y.nr === x.nr ? Object.assign({}, y, { aktiv: y.aktiv === false }) : y))), text: x.aktiv === false ? "Wieder anmelden" : "Abmelden" })));
+  }
+  const naechste = S.helfer.reduce((a, x) => Math.max(a, x.nr), 0) + 1;
+  if (document.activeElement !== $("neu-nr")) $("neu-nr").placeholder = "Nr. " + naechste;
+}
+async function helferSpeichern(liste) {
+  try { await S.sp.schreiben([], { helfer: liste }); S.helfer = liste; $("stamm-meldung").textContent = ""; }
+  catch (e) { $("stamm-meldung").textContent = fehlerText(e); }
+  zeichnen();
+}
+function helferNeu() {
+  const m = $("stamm-meldung");
+  const roh = $("neu-nr").value.trim(), name = $("neu-name").value.trim();
+  const nr = roh === "" ? S.helfer.reduce((a, x) => Math.max(a, x.nr), 0) + 1 : Number(roh);
+  if (!Number.isInteger(nr) || nr < 1 || nr > 9999) { m.textContent = "Nummer: bitte eine ganze Zahl von 1 bis 9999."; return; }
+  if (S.helfer.some((x) => x.nr === nr)) { m.textContent = "Nr. " + nr + " gibt es schon."; return; }
+  $("neu-nr").value = ""; $("neu-name").value = "";
+  helferSpeichern([...S.helfer, { nr, name, aktiv: true }]);
+}
+
+/* ---------- Start ---------- */
+async function saetzeHolen() {
+  let text = null;
+  try {
+    const ab = typeof AbortController === "function" ? new AbortController() : null;
+    const t = setTimeout(() => ab && ab.abort(), 5000);
+    const r = await fetch("./saetze.json", ab ? { signal: ab.signal, cache: "no-cache" } : { cache: "no-cache" });
+    clearTimeout(t);
+    if (r.ok) text = await r.text();
+  } catch (e) { text = null; }
+  const pruefen = (t) => { try { const k = JSON.parse(t); return k && Array.isArray(k.saetze) ? k : null; } catch (e) { return null; } };
+  let kfg = text ? pruefen(text) : null;
+  if (kfg) { try { localStorage.setItem("ernte.saetze", text); } catch (e) { /* ohne Zwischenspeicher weiter */ } return kfg; }
+  try { kfg = pruefen(localStorage.getItem("ernte.saetze")); } catch (e) { kfg = null; }
+  return kfg || { saetze: [], stand: "", fehlt: true };
+}
+
+async function vorschauFuellen() {
+  if (S.helfer.length || (await S.sp.tag(heute())).length) return;
+  await S.sp.schreiben([], { helfer: ["A", "B", "C", "D", "E", "F"].map((b, i) => ({ nr: i + 1, name: "Test " + b, aktiv: true })) });
+  S.helfer = (await S.sp.kvLesen(["helfer"])).helfer || [];
+  const s1 = S.saetze[0] && S.saetze[0].id, s2 = (S.saetze[1] || S.saetze[0] || {}).id;
+  if (!s1) return;
+  const kg = [15.3, 10.1, 15.5, 10.2, 10.3, 10.2], komp = [1.1, 1.2, 0.9, 1.6, 0.9, 2.1];
+  const liste = [];
+  for (let nr = 1; nr <= 6; nr++) {
+    const satz = nr <= 4 ? s1 : s2, k = kg[nr - 1] > 12 ? 3 : 2;
+    liste.push({ zeit: "06:00:0" + nr, helfer: nr, art: "start", satz }, { zeit: "09:00:0" + nr, helfer: nr, art: "pause", satz }, { zeit: "09:30:0" + nr, helfer: nr, art: "weiter", satz }, { zeit: "12:00:0" + nr, helfer: nr, art: "ende", satz });
+    for (const z of ["07:30", "09:00", "10:30", "12:00"]) liste.push({ zeit: z + ":3" + nr, helfer: nr, art: "wiegung", satz, kisten: k, klasse1_kg: kg[nr - 1], kompost_kg: komp[nr - 1] });
+  }
+  await speichern(liste);
+}
+
+async function aktualisieren() {
+  const b = $("b-update");
+  b.disabled = true; b.textContent = "Suche …";
+  try {
+    const c = await caches.open(CACHE);
+    await Promise.all(DATEIEN.map(async (u) => { const r = await fetch(u, { cache: "reload" }); if (!r.ok || r.redirected) throw new Error(u); await c.put(u, r); }));
+    location.reload();
+  } catch (e) { b.disabled = false; b.textContent = "Kein Internet. Später nochmal versuchen."; }
+}
+
+function fatal(text) { S.fatal = text; S.bereit = false; zeichnen(); }
+
+async function start() {
+  $("datum").value = S.datum; $("datum").max = S.datum;
+  zeichnen();
+  const kfg = await saetzeHolen();
+  S.vorschau = kfg.vorschau === true;
+  S.saetzeFehlen = !!kfg.fehlt;
+  S.saetzeStand = kfg.stand || "";
+  S.saetze = kfg.saetze.filter((s) => s && Number.isInteger(s.id) && s.aktiv !== false).map((s) => ({ id: s.id, schlag: String(s.schlag || ""), sorte: String(s.sorte || "") }));
+
+  S.sp = idbSpeicher(S.vorschau ? "ernte-vorschau" : "ernte");
+  try { await S.sp.oeffnen(); await S.sp.kvLesen(["geraet"]); }
+  catch (e) {
+    if (!S.vorschau) { fatal("Dieses Handy kann hier nichts speichern (privater Modus oder Speicher gesperrt). Bitte die Seite im normalen Browser öffnen. Es wurde nichts erfasst."); return; }
+    S.sp = fluechtigerSpeicher();
+  }
+  let kv;
+  try { kv = await S.sp.kvLesen(["geraet", "helfer"]); await merkerLesen(); }
+  catch (e) { fatal("Die gespeicherten Daten lassen sich nicht lesen (" + (e && e.message || "Fehler") + "). Seite neu öffnen; wenn es bleibt, Julius Bescheid sagen."); return; }
+  if (!kv.geraet) { kv.geraet = S.vorschau ? "vorsch" : zufall(6); await S.sp.schreiben([], { geraet: kv.geraet }); }
+  S.geraet = kv.geraet;
+  S.helfer = Array.isArray(kv.helfer) ? kv.helfer.filter((x) => x && Number.isInteger(x.nr)) : [];
+  S.bereit = true;
+  if (S.vorschau) { try { await vorschauFuellen(); } catch (e) { /* Vorschau bleibt dann leer */ } }
+  await endePruefen();
+  await tagLaden();
+
+  if (!S.vorschau && navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then((ok) => { S.dauerhaft = ok; zeichnen(); }, () => {});
+  }
+  if (!S.vorschau && "serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    try { await navigator.serviceWorker.register("./sw.js"); S.sw = true; $("b-update").hidden = false; } catch (e) { S.sw = false; }
+  }
+  const alsApp = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+  $("installieren").hidden = alsApp || S.vorschau;
+}
+
+// Läuft die Seite über Mitternacht oder liegt lange im Hintergrund: Anzeige und Tag nachziehen.
+function takt() {
+  if (!S.bereit || document.hidden) return;
+  const h = heute();
+  $("datum").max = h;
+  if (dlg.open) return;
+  if (S.folgtHeute && S.datum !== h) { tagWechseln(h).catch(() => {}); return; }
+  merkerLesen().then(tagLaden).catch(() => zeichnen());
+}
+
+$("datum").addEventListener("change", () => tagWechseln($("datum").value || heute()));
+$("b-anmelden").addEventListener("click", dlgAnmelden);
+$("b-senden").addEventListener("click", () => dlgSenden(false));
+$("b-alles-senden").addEventListener("click", () => dlgSenden(true));
+$("b-allepause").addEventListener("click", () => dlgSammel("pause"));
+$("b-alleweiter").addEventListener("click", () => dlgSammel("weiter"));
+$("b-alleende").addEventListener("click", () => dlgSammel("ende"));
+$("b-alle-eintraege").addEventListener("click", () => { S.alleZeigen = !S.alleZeigen; zeichnen(); });
+$("b-neu").addEventListener("click", helferNeu);
+$("b-update").addEventListener("click", aktualisieren);
+document.addEventListener("visibilitychange", takt);
+setInterval(takt, 30000);
+start().catch((e) => fatal("Die Seite konnte nicht starten (" + (e && e.message || "Fehler") + "). Bitte neu öffnen."));
+</script>
+</body>
+</html>

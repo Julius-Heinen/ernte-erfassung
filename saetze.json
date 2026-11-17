@@ -1,0 +1,41 @@
+{
+ "stand": "2026-11-17",
+ "saison": 2027,
+ "saetze": [
+  {
+   "id": 47,
+   "schlag": "Westermann",
+   "sorte": "Cadenza"
+  },
+  {
+   "id": 48,
+   "schlag": "Westermann",
+   "sorte": "Malwina"
+  },
+  {
+   "id": 46,
+   "schlag": "Westermann",
+   "sorte": "Ravellia"
+  },
+  {
+   "id": 42,
+   "schlag": "Westermann",
+   "sorte": "Rumba"
+  },
+  {
+   "id": 44,
+   "schlag": "Westermann",
+   "sorte": "Sonsation"
+  },
+  {
+   "id": 52,
+   "schlag": "Tunnel",
+   "sorte": "Rosaria"
+  },
+  {
+   "id": 51,
+   "schlag": "Tunnel",
+   "sorte": "Rumba"
+  }
+ ]
+}
