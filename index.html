@@ -223,7 +223,8 @@ textarea.roh { width: 100%; height: 90px; font-family: ui-monospace, Menlo, Cons
 
 <script>
 "use strict";
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
+const KISTE_SPERRE_SEK = 3;                    // „+1 Kiste“ ist nach einer Buchung so lange für diesen Helfer gesperrt (gegen Doppeltippen); nicht einstellbar
 const CACHE = "ernte-v1";                      // gleicher Name wie in sw.js
 const DATEIEN = ["./", "./saetze.json", "./manifest.webmanifest", "./manifest-ro.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 const KISTE_KG = 5;                            // Nenngewicht einer Kiste Klasse I (10 × 500 g); gewogen wird nicht (ADR 0008)
@@ -260,7 +261,7 @@ const TEXTE = {
     // Karten und Listen
     nr: (n) => "Nr. " + n, satz_nr: (id) => "Satz " + id,
     std: (v) => v + " Std.", kg_kompost: (v) => v + " kg Kompost", kisten_std: (v) => v + " Kisten/Std.",
-    kisten_gross: (n) => (n === 1 ? "Kiste" : "Kisten"), plus_kiste: "+1 Kiste", kompost_knopf: "Kompost", mehr: "Mehr", storniert: "storniert", storno: "Storno",
+    kisten_gross: (n) => (n === 1 ? "Kiste" : "Kisten"), plus_kiste: "+1 Kiste", plus_kiste_warte: (n) => "+1 Kiste (" + n + ")", kompost_knopf: "Kompost", mehr: "Mehr", storniert: "storniert", storno: "Storno",
     leer_anmelden: "Noch niemand angemeldet. Oben auf „Helfer anmelden“ tippen, dann Satz und Helfer wählen.",
     leer_anlegen: "Zuerst unten bei „Einstellungen und Erntehelfer“ die Helferliste einfügen.",
     keine_eintraege: "Noch keine Einträge an diesem Tag.", nur_30: "Nur die letzten 30 zeigen", alle_n: (n) => "Alle " + n + " Einträge zeigen",
@@ -359,7 +360,7 @@ const TEXTE = {
     status_arbeitet: "culege", status_pause: "pauză", status_feierabend: "terminat", status_fehlt: "neînscris", ende_fehlt_chip: "lipsește terminarea",
     nr: (n) => "Nr. " + n, satz_nr: (id) => "Parcela " + id,
     std: (v) => v + " ore", kg_kompost: (v) => v + " kg compost", kisten_std: (v) => v + " lăzi/oră",
-    kisten_gross: (n) => (n === 1 ? "ladă" : "lăzi"), plus_kiste: "+1 ladă", kompost_knopf: "Compost", mehr: "Mai mult", storniert: "anulat", storno: "Anulează",
+    kisten_gross: (n) => (n === 1 ? "ladă" : "lăzi"), plus_kiste: "+1 ladă", plus_kiste_warte: (n) => "+1 ladă (" + n + ")", kompost_knopf: "Compost", mehr: "Mai mult", storniert: "anulat", storno: "Anulează",
     leer_anmelden: "Încă nu e nimeni înscris. Apasă sus pe „Înscrie culegători”, apoi alege parcela și culegătorii.",
     leer_anlegen: "Mai întâi lipește jos, la „Setări și culegători”, lista de culegători.",
     keine_eintraege: "Încă nu sunt înregistrări în această zi.", nur_30: "Arată doar ultimele 30", alle_n: (n) => "Arată toate cele " + n + " înregistrări",
@@ -437,7 +438,8 @@ const S = {
   sp: null, geraet: "", vorschau: false, saetzeFehlen: false, saetzeStand: "",
   datum: heute(), folgtHeute: true, eintraege: [], helfer: [], saetze: [],
   offen: {}, offenSeit: null, letzterVersand: null, fehltEnde: [],
-  alleZeigen: false, bereit: false, fatal: "", dauerhaft: null, sw: false, spracheFrage: false, helferliste: null, saison: null
+  alleZeigen: false, bereit: false, fatal: "", dauerhaft: null, sw: false, spracheFrage: false, helferliste: null, saison: null,
+  kisteLaeuft: {}, kisteSperre: {}   // je Helfernummer: Buchung läuft gerade / „+1 Kiste“ gesperrt bis (ms)
 };
 const $ = (id) => document.getElementById(id);
 
@@ -647,7 +649,7 @@ function zeichnen() {
         el("span", { text: T("kisten_std", std > 0.05 ? de(p.kisten / std) : "–") }),
         el("span", { class: "ko", text: T("kg_kompost", de(p.ko)) })),
       el("div", { class: "aktionen" },
-        el("button", { type: "button", class: "knopf haupt plus", onclick: () => plusKiste(p), text: T("plus_kiste") }),
+        el("button", { type: "button", class: "knopf haupt plus", "data-plus": p.nr, onclick: () => plusKiste(p), text: T("plus_kiste") }),
         el("button", { type: "button", class: "knopf", onclick: () => dlgKompost(p), text: T("kompost_knopf") }),
         el("button", { type: "button", class: "knopf", disabled: p.status === "feierabend" || p.status === "fehlt", onclick: () => (istHeute ? einzel(p.nr, pause ? "weiter" : "pause", p.satz) : dlgMehr(p, pause ? "weiter" : "pause")), text: pause ? T("art_weiter") : T("art_pause") }),
         el("button", { type: "button", class: "knopf", onclick: () => dlgMehr(p, endeFehlt ? "ende" : null), text: T("mehr") }))));
@@ -688,6 +690,7 @@ function zeichnen() {
   bs.className = "knopf gross" + (n && alt ? " dringend" : "");
   for (const id of ["b-anmelden", "b-senden", "b-allepause", "b-alleweiter", "b-alleende", "b-neu", "b-alles-senden", "b-liste"]) $(id).disabled = !S.bereit;
 
+  kistenKnoepfe();
   stammZeichnen();
   $("info").textContent = T("info", S.geraet || "–", APP_VERSION, S.saetze.length, S.saetzeStand || "–")
     + (S.letzterVersand ? T("zuletzt", new Date(S.letzterVersand).toLocaleString(T("locale"), { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })) : "")
@@ -882,14 +885,32 @@ function dlgAnmelden() {
 async function plusKiste(p) {
   const laeuft = p.status === "arbeitet" || p.status === "pause";
   if (S.datum !== heute() || !laeuft || !S.saetze.some((x) => x.id === p.satz)) { dlgKiste(p); return; }
-  if (einzelLaeuft) return;                  // Doppeltippen während des Speicherns zählt nicht doppelt
-  einzelLaeuft = true;
+  if (kisteGesperrt(p.nr)) return;           // Doppeltippen: läuft noch oder eben gebucht
+  S.kisteLaeuft[p.nr] = true;
+  kistenKnoepfe();
   try {
     const ids = await speichern([{ zeit: zeitMitSekunden(jetztZeit(), p.nr), helfer: p.nr, art: "wiegung", satz: p.satz, kisten: 1, klasse1_kg: KISTE_KG, kompost_kg: 0 }]);
+    S.kisteSperre[p.nr] = Date.now() + KISTE_SPERRE_SEK * 1000;   // Sperre erst, wenn gespeichert ist
     const q = tagAuswerten().pro.get(p.nr);
     toast(T("kiste_toast", p.nr, q ? q.kisten : 1), ids);
   } catch (e) { toast(fehlerText(e)); }
-  einzelLaeuft = false;
+  delete S.kisteLaeuft[p.nr];
+  kistenKnoepfe();
+}
+// Sperre je Helfernummer im Zustand S (nicht am Knopf), damit sie auch nach dem Neuzeichnen der Karten gilt.
+function kisteGesperrt(nr) { return !!S.kisteLaeuft[nr] || (S.kisteSperre[nr] || 0) > Date.now(); }
+let kistenTakt = null;
+function kistenKnoepfe() {
+  const jetzt = Date.now();
+  let warten = false;
+  for (const b of document.querySelectorAll("button[data-plus]")) {
+    const nr = Number(b.dataset.plus), rest = (S.kisteSperre[nr] || 0) - jetzt;
+    if (rest > 0) { b.disabled = true; b.textContent = T("plus_kiste_warte", Math.ceil(rest / 1000)); warten = true; }
+    else { b.disabled = !!S.kisteLaeuft[nr]; b.textContent = T("plus_kiste"); if (S.kisteLaeuft[nr]) warten = true; }
+  }
+  for (const nr of Object.keys(S.kisteSperre)) if (S.kisteSperre[nr] <= jetzt) delete S.kisteSperre[nr];
+  if (warten && !kistenTakt) kistenTakt = setInterval(kistenKnoepfe, 200);   // Countdown, danach von selbst wieder frei
+  if (!warten && kistenTakt) { clearInterval(kistenTakt); kistenTakt = null; }
 }
 function titelHelfer(text, nr) { return text + (helferName(nr) ? " · " + helferName(nr) : ""); }
 function dlgKiste(p) {
